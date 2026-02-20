@@ -1,214 +1,840 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <title>ResearchPilot AI</title>
-
-    <style>
-        body {
-            background: #020617;
-            color: #e5e7eb;
-            font-family: Segoe UI, Arial;
-            margin: 0;
-            padding: 0;
-        }
-
-        .container {
-            width: 80%;
-            margin: auto;
-            text-align: center;
-            padding-top: 30px;
-        }
-
-        h1 {
-            margin-bottom: 5px
-        }
-
-        h3 {
-            color: #94a3b8;
-            font-weight: normal
-        }
-
-        input {
-            width: 70%;
-            padding: 12px;
-            border-radius: 8px;
-            border: none;
-            background: #111827;
-            color: white;
-            margin-top: 20px;
-        }
-
-        button {
-            padding: 12px 18px;
-            border-radius: 8px;
-            border: none;
-            background: #22c55e;
-            color: black;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background: #16a34a
-        }
-
-        #thinking {
-            margin-top: 25px;
-            color: #22c55e;
-            display: none;
-        }
-
-        .agent-box {
-            background: #0f172a;
-            border: 1px solid #334155;
-            padding: 16px;
-            margin: 14px auto;
-            width: 80%;
-            border-radius: 12px;
-            text-align: left;
-            transition: 0.3s;
-        }
-
-        .agent-box:hover {
-            border-color: #22c55e;
-            transform: scale(1.01);
-        }
-
-        .agent-title {
-            font-weight: bold;
-            color: #22c55e;
-            margin-bottom: 8px;
-        }
-
-        pre {
-            white-space: pre-wrap;
-            font-family: monospace;
-            color: #e5e7eb;
-        }
-
-        .final {
-            background: #020617;
-            border: 2px solid #22c55e;
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ResearchPilot AI — Watch an AI think. Autonomous Research Intelligence Hub.">
+    <title>ResearchPilot AI — Living Brain</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
 
-    <div class="container">
+    <canvas id="bgParticles"></canvas>
+    <div class="ambient-glow glow-1"></div>
+    <div class="ambient-glow glow-2"></div>
+    <div class="ambient-glow glow-3"></div>
 
-        <h1>🧠 ResearchPilot AI Agent</h1>
-        <h3>Autonomous Research Intelligence Hub</h3>
-
-        <input id="q" placeholder="Ask a deep research question">
-        <button onclick="ask()">Research</button>
-
-        <div id="thinking">🧠 Agents are thinking...</div>
-
-        <div id="steps"></div>
-
-        <div id="summaryBox" class="agent-box final" style="display:none">
-            <div class="agent-title">📊 Summary</div>
-            <pre id="summary"></pre>
+    <!-- Memory Recall Overlay -->
+    <div class="memory-overlay" id="memoryOverlay">
+        <div class="memory-message">
+            <span class="memory-icon">🧠✨</span>
+            Relevant prior knowledge activated
         </div>
+    </div>
 
-        <div id="verdictBox" class="agent-box final" style="display:none">
-            <div class="agent-title">⚖️ Final Verdict</div>
-            <pre id="verdict"></pre>
-        </div>
-        <div style="margin-top:20px">
-            <a id="downloadBtn" href="#" target="_blank" style="
-        display:none;
-        background:#22c55e;
-        padding:12px 18px;
-        border-radius:8px;
-        color:black;
-        font-weight:bold;
-        text-decoration:none;">
-                🧾 Download Research Paper
-            </a>
-        </div>
+    <div class="app-container">
 
+        <!-- ============================================
+         HERO
+         ============================================ -->
+        <section class="hero-section">
+            <div class="brain-canvas-wrapper">
+                <canvas id="brainCanvas" width="840" height="840"></canvas>
+                <div class="orbital-dot dot-1"></div>
+                <div class="orbital-dot dot-2"></div>
+                <div class="orbital-dot dot-3"></div>
+                <div class="orbital-dot dot-4"></div>
+                <div class="brain-state-label" id="brainStateLabel">idle</div>
+            </div>
+            <h1 class="hero-title">ResearchPilot</h1>
+            <p class="hero-subtitle">Autonomous Research Intelligence Hub</p>
+
+            <div class="search-container">
+                <input type="text" id="questionInput" class="search-input" placeholder="Ask a deep research question…"
+                    autocomplete="off">
+                <button class="mic-btn" id="micBtn" onclick="toggleMic()" title="Voice Input">
+                    🎤
+                </button>
+                <button class="search-btn" id="researchBtn" onclick="startResearch()">
+                    Research
+                </button>
+            </div>
+        </section>
+
+        <!-- ============================================
+         THINKING TIMELINE
+         ============================================ -->
+        <section class="timeline-section" id="timelineSection">
+            <div class="thinking-timeline" id="timelineBar">
+                <div class="timeline-node" id="tl-planning" data-stage="planning">
+                    <div class="timeline-icon">🧠</div>
+                    <span class="timeline-label">Planning</span>
+                </div>
+                <div class="timeline-connector" id="conn-planning"></div>
+                <div class="timeline-node" id="tl-research" data-stage="research">
+                    <div class="timeline-icon">🌐</div>
+                    <span class="timeline-label">Research</span>
+                </div>
+                <div class="timeline-connector" id="conn-research"></div>
+                <div class="timeline-node" id="tl-analysis" data-stage="analysis">
+                    <div class="timeline-icon">🔬</div>
+                    <span class="timeline-label">Analysis</span>
+                </div>
+                <div class="timeline-connector" id="conn-analysis"></div>
+                <div class="timeline-node" id="tl-decision" data-stage="decision">
+                    <div class="timeline-icon">⚖️</div>
+                    <span class="timeline-label">Decision</span>
+                </div>
+                <div class="timeline-connector" id="conn-decision"></div>
+                <div class="timeline-node" id="tl-memory" data-stage="memory">
+                    <div class="timeline-icon">📚</div>
+                    <span class="timeline-label">Memory</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================
+         MAIN CONTENT
+         ============================================ -->
+        <div class="main-content" id="mainContent">
+            <div class="left-panel">
+
+                <!-- Live Token Stream -->
+                <div class="token-stream" id="tokenStream">
+                    <div class="stream-dots"><span></span><span></span><span></span></div>
+                    <span class="stream-text" id="streamText">initializing cognitive engine…</span>
+                </div>
+
+                <!-- FINAL ANSWER — always visible first -->
+                <div class="agent-card final-card" id="summaryCard" style="display:none">
+                    <div class="agent-card-header">
+                        <div class="agent-card-icon">📊</div>
+                        <span class="agent-card-title">Research Summary</span>
+                    </div>
+                    <div class="agent-card-content" id="summaryContent"></div>
+                </div>
+
+                <div class="agent-card final-card" id="verdictCard" style="display:none">
+                    <div class="agent-card-header">
+                        <div class="agent-card-icon">⚖️</div>
+                        <span class="agent-card-title">Final Verdict</span>
+                    </div>
+                    <div class="agent-card-content" id="verdictContent"></div>
+                </div>
+
+                <!-- Confidence -->
+                <div class="confidence-section" id="confidenceSection">
+                    <div class="confidence-meter">
+                        <div class="gauge-container">
+                            <canvas id="confidenceGauge" width="220" height="120"></canvas>
+                        </div>
+                        <div class="gauge-value" id="gaugeValue">—</div>
+                        <div class="gauge-label">Confidence Level</div>
+                    </div>
+                </div>
+
+                <!-- Toggle button — show agent thinking details -->
+                <button class="toggle-details-btn" id="toggleDetailsBtn" onclick="toggleDetails()" style="display:none">
+                    <span class="chevron">▼</span> View Agent Thinking Process
+                </button>
+
+                <!-- Agent cards wrapper (hidden by default) -->
+                <div class="agent-cards-wrapper" id="agentCardsWrapper">
+                    <div class="agent-cards" id="agentCards"></div>
+                </div>
+
+                <!-- Download -->
+                <div class="download-section">
+                    <a id="downloadBtn" class="download-btn" href="#" target="_blank" style="display:none">
+                        🧾 Download Research Paper
+                    </a>
+                </div>
+            </div>
+
+            <!-- Knowledge Graph -->
+            <div class="knowledge-panel">
+                <div class="knowledge-panel-title">Knowledge Graph</div>
+                <svg id="knowledgeGraph" viewBox="0 0 244 300"></svg>
+                <div class="knowledge-concepts" id="conceptTags"></div>
+            </div>
+        </div>
     </div>
 
     <script>
+        // ============================================================
+        // CONFIG
+        // ============================================================
+        const COGNITIVE_MESSAGES = {
+            planning: ["decomposing query into sub-questions…", "formulating research strategy…", "identifying knowledge gaps…", "building hypothesis framework…"],
+            research: ["scanning knowledge sources…", "extracting validated evidence…", "comparing source reliability…", "filtering relevant data points…", "cross-referencing findings…"],
+            analysis: ["synthesizing cross-source patterns…", "detecting contradictions…", "weighting evidence strength…", "forming analytical conclusions…"],
+            decision: ["evaluating confidence levels…", "calibrating certainty thresholds…", "stabilizing final verdict…"],
+            memory: ["encoding knowledge for recall…", "indexing structured findings…"]
+        };
+        const STAGE_ICONS = { planning: '🧠', research: '🌐', analysis: '🔬', decision: '⚖️', memory: '📚' };
+        const STAGE_ORDER = ['planning', 'research', 'analysis', 'decision', 'memory'];
 
-        const stageBoxes = {};
+        // ============================================================
+        // STATE
+        // ============================================================
+        let brainState = 'idle', isResearching = false, cognitiveInterval = null;
+        let graphNodes = [], graphEdges = [], detailsVisible = false;
 
-        async function typeAppend(text, element, speed = 8) {
-            for (let i = 0; i < text.length; i++) {
-                element.innerHTML += text.charAt(i);
-                await new Promise(r => setTimeout(r, speed));
+        // ============================================================
+        // BACKGROUND PARTICLES
+        // ============================================================
+        const bgC = document.getElementById('bgParticles');
+        const bgX = bgC.getContext('2d');
+        let bgP = [];
+
+        function resizeBg() { bgC.width = innerWidth; bgC.height = innerHeight; }
+        resizeBg();
+        addEventListener('resize', () => { resizeBg(); initBgP(); });
+
+        function initBgP() {
+            bgP = [];
+            const n = Math.min(80, Math.floor(innerWidth * innerHeight / 18000));
+            for (let i = 0; i < n; i++) {
+                bgP.push({
+                    x: Math.random() * bgC.width,
+                    y: Math.random() * bgC.height,
+                    vx: (Math.random() - 0.5) * 0.4,
+                    vy: (Math.random() - 0.5) * 0.4,
+                    r: 1 + Math.random() * 2,
+                    a: 0.1 + Math.random() * 0.3,
+                    h: Math.random() > 0.65 ? 270 : 188
+                });
+            }
+        }
+        initBgP();
+
+        function drawBg() {
+            bgX.clearRect(0, 0, bgC.width, bgC.height);
+            for (const p of bgP) {
+                p.x += p.vx; p.y += p.vy;
+                if (p.x < 0) p.x = bgC.width; if (p.x > bgC.width) p.x = 0;
+                if (p.y < 0) p.y = bgC.height; if (p.y > bgC.height) p.y = 0;
+                bgX.beginPath();
+                bgX.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                bgX.fillStyle = `hsla(${p.h},100%,70%,${p.a})`;
+                bgX.fill();
+            }
+            for (let i = 0; i < bgP.length; i++) {
+                for (let j = i + 1; j < bgP.length; j++) {
+                    const dx = bgP[i].x - bgP[j].x, dy = bgP[i].y - bgP[j].y;
+                    const d = Math.sqrt(dx * dx + dy * dy);
+                    if (d < 140) {
+                        bgX.beginPath();
+                        bgX.moveTo(bgP[i].x, bgP[i].y);
+                        bgX.lineTo(bgP[j].x, bgP[j].y);
+                        bgX.strokeStyle = `rgba(0,228,255,${(1 - d / 140) * 0.08})`;
+                        bgX.lineWidth = 0.5;
+                        bgX.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(drawBg);
+        }
+        drawBg();
+
+        // ============================================================
+        // NEURAL BRAIN CANVAS (bigger, more impressive)
+        // ============================================================
+        const bCan = document.getElementById('brainCanvas');
+        const bCtx = bCan.getContext('2d');
+        const B = { w: bCan.width, h: bCan.height, cx: 420, cy: 400 };
+
+        let bPts = [], bEdges = [], bPulses = [], bTime = 0;
+
+        function genBrain() {
+            bPts = []; bEdges = [];
+
+            // Outline layer — brain shape with folds
+            for (let a = 0; a < Math.PI * 2; a += 0.055) {
+                const rx = 220 + Math.sin(a * 3) * 35 + Math.cos(a * 5) * 20 + Math.sin(a * 7) * 8;
+                const ry = 175 + Math.cos(a * 2) * 28 + Math.sin(a * 4) * 15;
+                const x = B.cx - 15 + rx * Math.cos(a) * 0.55;
+                const y = B.cy + ry * Math.sin(a) * 0.88;
+                bPts.push({ x, y, bx: x, by: y, r: 1.5 + Math.random() * 2.5, g: 0.3 + Math.random() * 0.5, p: Math.random() * Math.PI * 2, l: 'o' });
+            }
+
+            // Dense internal clusters
+            const cl = [
+                { cx: B.cx - 80, cy: B.cy - 55, r: 105, n: 40 }, { cx: B.cx + 65, cy: B.cy - 40, r: 95, n: 35 },
+                { cx: B.cx - 40, cy: B.cy + 40, r: 80, n: 28 }, { cx: B.cx + 55, cy: B.cy + 50, r: 70, n: 25 },
+                { cx: B.cx, cy: B.cy - 95, r: 65, n: 30 }, { cx: B.cx, cy: B.cy + 75, r: 55, n: 20 },
+                { cx: B.cx - 110, cy: B.cy, r: 50, n: 18 }, { cx: B.cx + 95, cy: B.cy, r: 50, n: 18 },
+                { cx: B.cx, cy: B.cy, r: 90, n: 35 }, // central hub
+            ];
+
+            for (const c of cl) {
+                for (let i = 0; i < c.n; i++) {
+                    const an = Math.random() * Math.PI * 2, d = Math.random() * c.r;
+                    const x = c.cx + Math.cos(an) * d, y = c.cy + Math.sin(an) * d;
+                    bPts.push({ x, y, bx: x, by: y, r: 1 + Math.random() * 3, g: 0.2 + Math.random() * 0.65, p: Math.random() * Math.PI * 2, l: 'i' });
+                }
+            }
+
+            // Edges
+            for (let i = 0; i < bPts.length; i++) {
+                for (let j = i + 1; j < bPts.length; j++) {
+                    const dx = bPts[i].x - bPts[j].x, dy = bPts[i].y - bPts[j].y;
+                    const d = Math.sqrt(dx * dx + dy * dy);
+                    if (d < 50 && Math.random() > 0.35) bEdges.push({ a: i, b: j, d });
+                }
+            }
+        }
+        genBrain();
+
+        function brainCol() {
+            switch (brainState) {
+                case 'planning': return { h: 188, s: 100, l: 50, p: true };
+                case 'research': return { h: 200, s: 100, l: 60, p: true };
+                case 'analysis': return { h: 270, s: 80, l: 65, p: true };
+                case 'decision': return { h: 145, s: 90, l: 45, p: true };
+                case 'memory': return { h: 40, s: 100, l: 50, p: true };
+                default: return { h: 195, s: 100, l: 50, p: false };
             }
         }
 
-        function getOrCreateStageBox(stage) {
-
-            if (stageBoxes[stage]) return stageBoxes[stage];
-
-            const box = document.createElement("div");
-            box.className = "agent-box";
-
-            const title = document.createElement("div");
-            title.className = "agent-title";
-            title.innerText = stage.toUpperCase();
-
-            const content = document.createElement("pre");
-
-            box.appendChild(title);
-            box.appendChild(content);
-
-            document.getElementById("steps").appendChild(box);
-
-            stageBoxes[stage] = content;
-            return content;
+        function addPulse() {
+            const s = bPts[Math.floor(Math.random() * bPts.length)];
+            bPulses.push({ x: s.x, y: s.y, r: 0, mr: 80 + Math.random() * 120, sp: 1 + Math.random() * 1.5, a: 0.5 });
         }
 
-        async function ask() {
+        function drawBrain() {
+            bCtx.clearRect(0, 0, B.w, B.h);
+            bTime += 0.016;
+            const c = brainCol(), sp = brainState === 'idle' ? 0.3 : 1;
 
-            document.getElementById("steps").innerHTML = "";
-            document.getElementById("summaryBox").style.display = "none";
-            document.getElementById("verdictBox").style.display = "none";
-            document.getElementById("thinking").style.display = "block";
+            // Float
+            for (const p of bPts) {
+                p.x = p.bx + Math.sin(bTime * sp + p.p) * 3;
+                p.y = p.by + Math.cos(bTime * sp * 0.7 + p.p) * 3;
+            }
 
-            Object.keys(stageBoxes).forEach(k => delete stageBoxes[k]);
+            // Core glow (larger)
+            const cg = bCtx.createRadialGradient(B.cx, B.cy, 0, B.cx, B.cy, 250);
+            cg.addColorStop(0, `hsla(${c.h},${c.s}%,${c.l}%,${c.p ? 0.1 : 0.05})`);
+            cg.addColorStop(0.5, `hsla(${c.h},${c.s}%,${c.l}%,${c.p ? 0.04 : 0.02})`);
+            cg.addColorStop(1, 'transparent');
+            bCtx.fillStyle = cg;
+            bCtx.fillRect(0, 0, B.w, B.h);
 
-            let question = document.getElementById("q").value;
+            // Edges
+            for (const e of bEdges) {
+                const a = bPts[e.a], b = bPts[e.b];
+                const wa = 0.1 + Math.sin(bTime * 2 + e.a * 0.1) * 0.05 + (c.p ? 0.08 : 0);
+                bCtx.beginPath();
+                bCtx.moveTo(a.x, a.y);
+                bCtx.lineTo(b.x, b.y);
+                bCtx.strokeStyle = `hsla(${c.h},${c.s}%,${c.l}%,${wa})`;
+                bCtx.lineWidth = 0.7;
+                bCtx.stroke();
+            }
 
-            let res = await fetch("/ask", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ question })
+            // Pulses
+            if (c.p && Math.random() > 0.88) addPulse();
+            for (let i = bPulses.length - 1; i >= 0; i--) {
+                const p = bPulses[i];
+                p.r += p.sp;
+                p.a = 0.4 * (1 - p.r / p.mr);
+                if (p.r >= p.mr) { bPulses.splice(i, 1); continue; }
+                bCtx.beginPath();
+                bCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                bCtx.strokeStyle = `hsla(${c.h},${c.s}%,${c.l}%,${p.a})`;
+                bCtx.lineWidth = 2;
+                bCtx.stroke();
+            }
+
+            // Nodes
+            for (const p of bPts) {
+                const np = Math.sin(bTime * 3 + p.p) * 0.3;
+                const gv = p.g + (c.p ? np * 0.4 : 0);
+                const r = p.r + (c.p ? np * 0.6 : 0);
+
+                // Outer glow
+                bCtx.beginPath();
+                bCtx.arc(p.x, p.y, r * 4, 0, Math.PI * 2);
+                bCtx.fillStyle = `hsla(${c.h},${c.s}%,${c.l}%,${gv * 0.06})`;
+                bCtx.fill();
+
+                // Core
+                bCtx.beginPath();
+                bCtx.arc(p.x, p.y, r, 0, Math.PI * 2);
+                bCtx.fillStyle = `hsla(${c.h},${c.s}%,${c.l + 20}%,${gv})`;
+                bCtx.fill();
+
+                // Hot center
+                bCtx.beginPath();
+                bCtx.arc(p.x, p.y, r * 0.4, 0, Math.PI * 2);
+                bCtx.fillStyle = `hsla(${c.h},50%,92%,${gv * 0.8})`;
+                bCtx.fill();
+            }
+
+            // Energy arcs (more frequent when active)
+            if (c.p && Math.random() > 0.92) {
+                const si = Math.floor(Math.random() * bPts.length);
+                let ti; do { ti = Math.floor(Math.random() * bPts.length); } while (ti === si);
+                const s = bPts[si], t = bPts[ti];
+                const mx = (s.x + t.x) / 2 + (Math.random() - 0.5) * 80;
+                const my = (s.y + t.y) / 2 + (Math.random() - 0.5) * 80;
+                bCtx.beginPath();
+                bCtx.moveTo(s.x, s.y);
+                bCtx.quadraticCurveTo(mx, my, t.x, t.y);
+                bCtx.strokeStyle = `hsla(${c.h},${c.s}%,80%,0.35)`;
+                bCtx.lineWidth = 1.2;
+                bCtx.stroke();
+            }
+
+            requestAnimationFrame(drawBrain);
+        }
+        drawBrain();
+
+        function setBrainState(st) {
+            brainState = st;
+            const lbl = document.getElementById('brainStateLabel');
+            lbl.textContent = st;
+            lbl.style.color =
+                st === 'idle' ? 'var(--cyan)' : st === 'planning' ? 'var(--cyan)' :
+                    st === 'research' ? '#64b5f6' : st === 'analysis' ? 'var(--purple)' :
+                        st === 'decision' ? 'var(--green)' : st === 'memory' ? 'var(--gold)' : 'var(--cyan)';
+            lbl.style.borderColor =
+                st === 'idle' ? 'rgba(0,228,255,0.15)' : st === 'planning' ? 'rgba(0,228,255,0.25)' :
+                    st === 'research' ? 'rgba(100,181,246,0.25)' : st === 'analysis' ? 'rgba(168,85,247,0.25)' :
+                        st === 'decision' ? 'rgba(0,230,118,0.25)' : st === 'memory' ? 'rgba(255,171,0,0.25)' : 'rgba(0,228,255,0.15)';
+        }
+
+        // ============================================================
+        // VOICE INPUT (Web Speech API)
+        // ============================================================
+        let recognition = null, isRecording = false;
+
+        function initSpeech() {
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SR) return null;
+            const r = new SR();
+            r.lang = 'en-US';
+            r.continuous = false;
+            r.interimResults = true;
+            r.onresult = (e) => {
+                let final = '', interim = '';
+                for (let i = e.resultIndex; i < e.results.length; i++) {
+                    if (e.results[i].isFinal) final += e.results[i][0].transcript;
+                    else interim += e.results[i][0].transcript;
+                }
+                document.getElementById('questionInput').value = final || interim;
+            };
+            r.onend = () => { stopRecording(); };
+            r.onerror = () => { stopRecording(); };
+            return r;
+        }
+
+        function toggleMic() {
+            if (isRecording) {
+                if (recognition) recognition.stop();
+                stopRecording();
+            } else {
+                if (!recognition) recognition = initSpeech();
+                if (!recognition) { alert('Speech recognition is not supported in this browser.'); return; }
+                recognition.start();
+                isRecording = true;
+                document.getElementById('micBtn').classList.add('recording');
+                document.getElementById('questionInput').placeholder = 'Listening…';
+            }
+        }
+
+        function stopRecording() {
+            isRecording = false;
+            document.getElementById('micBtn').classList.remove('recording');
+            document.getElementById('questionInput').placeholder = 'Ask a deep research question…';
+        }
+
+        // ============================================================
+        // TIMELINE (Fixed for all stages including analysis)
+        // ============================================================
+        function resetTimeline() {
+            STAGE_ORDER.forEach(s => {
+                const n = document.getElementById('tl-' + s);
+                if (n) { n.classList.remove('processing', 'completed'); }
             });
+            STAGE_ORDER.forEach(s => {
+                const c = document.getElementById('conn-' + s);
+                if (c) c.classList.remove('active');
+            });
+            document.getElementById('timelineBar').classList.remove('scanning');
+        }
 
-            let data = await res.json();
+        function setTimelineStage(stage, state) {
+            const node = document.getElementById('tl-' + stage);
+            if (!node) return;
 
-            document.getElementById("thinking").style.display = "none";
+            // Clear previous state
+            node.classList.remove('processing', 'completed');
 
-            for (const step of data.steps) {
-
-                const contentBox = getOrCreateStageBox(step.stage);
-
-                await typeAppend(step.content + "\n\n", contentBox, 6);
-            }
-
-            document.getElementById("summaryBox").style.display = "block";
-            document.getElementById("summary").innerHTML = "";
-            await typeAppend(data.summary, document.getElementById("summary"), 6);
-
-            document.getElementById("verdictBox").style.display = "block";
-            document.getElementById("verdict").innerHTML = "";
-            await typeAppend(data.verdict, document.getElementById("verdict"), 6);
-            if (data.pdf) {
-                const btn = document.getElementById("downloadBtn");
-                btn.href = "/" + data.pdf;
-                btn.style.display = "inline-block";
+            // Apply new state
+            if (state === 'processing') {
+                node.classList.add('processing');
+                document.getElementById('timelineBar').classList.add('scanning');
+            } else if (state === 'completed') {
+                node.classList.add('completed');
+                // Activate connector BEFORE this stage
+                const c = document.getElementById('conn-' + stage);
+                // Actually, activate connector AFTER the previous stage
+                const idx = STAGE_ORDER.indexOf(stage);
+                if (idx > 0) {
+                    const prevStage = STAGE_ORDER[idx - 1];
+                    const prevConn = document.getElementById('conn-' + prevStage);
+                    if (prevConn) prevConn.classList.add('active');
+                }
             }
         }
 
-    </script>
+        // ============================================================
+        // TOKEN STREAM
+        // ============================================================
+        function startStream(stage) {
+            stopStream();
+            document.getElementById('tokenStream').classList.add('active');
+            const msgs = COGNITIVE_MESSAGES[stage] || ['processing…'];
+            let idx = 0;
+            const el = document.getElementById('streamText');
+            el.textContent = msgs[0];
+            cognitiveInterval = setInterval(() => {
+                idx = (idx + 1) % msgs.length;
+                el.style.opacity = '0';
+                setTimeout(() => { el.textContent = msgs[idx]; el.style.opacity = '1'; }, 250);
+            }, 2400);
+        }
+        function stopStream() {
+            clearInterval(cognitiveInterval);
+            cognitiveInterval = null;
+            document.getElementById('tokenStream').classList.remove('active');
+            document.getElementById('timelineBar').classList.remove('scanning');
+        }
 
+        // ============================================================
+        // TOGGLE AGENT DETAILS
+        // ============================================================
+        function toggleDetails() {
+            detailsVisible = !detailsVisible;
+            const wrapper = document.getElementById('agentCardsWrapper');
+            const btn = document.getElementById('toggleDetailsBtn');
+            if (detailsVisible) {
+                wrapper.classList.add('expanded');
+                btn.classList.add('expanded');
+                btn.innerHTML = '<span class="chevron">▼</span> Hide Agent Thinking Process';
+            } else {
+                wrapper.classList.remove('expanded');
+                btn.classList.remove('expanded');
+                btn.innerHTML = '<span class="chevron">▼</span> View Agent Thinking Process';
+            }
+        }
+
+        // ============================================================
+        // KNOWLEDGE GRAPH
+        // ============================================================
+        const kgSvg = document.getElementById('knowledgeGraph');
+        const conceptBox = document.getElementById('conceptTags');
+        const KW = ['evidence', 'hypothesis', 'correlation', 'source', 'data', 'pattern', 'conclusion', 'factor', 'mechanism', 'study', 'analysis', 'finding', 'theory', 'result', 'impact'];
+
+        function extractConcepts(t) {
+            const w = t.toLowerCase().split(/[\s,.:;!?()\[\]{}]+/);
+            const f = [];
+            for (const k of KW) if (w.includes(k) && !f.includes(k)) f.push(k);
+            const u = w.filter(x => x.length > 6 && !KW.includes(x));
+            return [...f, ...[...new Set(u)].slice(0, 3)].slice(0, 8);
+        }
+
+        function addNode(label) {
+            const cx = 25 + Math.random() * 194, cy = 20 + Math.random() * 260, r = 3 + Math.random() * 5;
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', cx); circle.setAttribute('cy', cy); circle.setAttribute('r', '0');
+            circle.setAttribute('fill', 'rgba(168,85,247,0.5)'); circle.setAttribute('stroke', '#c084fc'); circle.setAttribute('stroke-width', '0.8');
+            circle.style.transition = 'all 0.6s cubic-bezier(0.34,1.56,0.64,1)';
+            kgSvg.appendChild(circle);
+            setTimeout(() => circle.setAttribute('r', r), 30);
+
+            const glow = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            glow.setAttribute('cx', cx); glow.setAttribute('cy', cy); glow.setAttribute('r', r * 3);
+            glow.setAttribute('fill', 'rgba(168,85,247,0.06)');
+            kgSvg.insertBefore(glow, kgSvg.firstChild);
+
+            const nd = { cx, cy, r, label };
+            graphNodes.push(nd);
+
+            const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            txt.setAttribute('x', cx); txt.setAttribute('y', cy - r - 5);
+            txt.setAttribute('text-anchor', 'middle'); txt.setAttribute('fill', 'rgba(192,132,252,0.6)');
+            txt.setAttribute('font-size', '6.5'); txt.setAttribute('font-family', 'Rajdhani,sans-serif'); txt.setAttribute('font-weight', '600');
+            txt.textContent = label;
+            txt.style.opacity = '0'; txt.style.transition = 'opacity 0.5s ease 0.3s';
+            kgSvg.appendChild(txt);
+            setTimeout(() => txt.style.opacity = '1', 60);
+
+            if (graphNodes.length > 1) {
+                const pv = graphNodes[graphNodes.length - 2];
+                addEdge(pv.cx, pv.cy, cx, cy);
+                if (graphNodes.length > 2 && Math.random() > 0.5) {
+                    const ri = Math.floor(Math.random() * (graphNodes.length - 2));
+                    addEdge(graphNodes[ri].cx, graphNodes[ri].cy, cx, cy);
+                }
+            }
+
+            const tag = document.createElement('span');
+            tag.className = 'concept-tag';
+            tag.textContent = label;
+            conceptBox.appendChild(tag);
+            setTimeout(() => tag.classList.add('visible'), 60);
+        }
+
+        function addEdge(x1, y1, x2, y2) {
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+            line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+            line.setAttribute('stroke', 'rgba(0,228,255,0.12)'); line.setAttribute('stroke-width', '0.6');
+            const len = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+            line.setAttribute('stroke-dasharray', len); line.setAttribute('stroke-dashoffset', len);
+            line.style.transition = 'stroke-dashoffset 0.8s ease';
+            kgSvg.insertBefore(line, kgSvg.firstChild);
+            setTimeout(() => line.setAttribute('stroke-dashoffset', '0'), 30);
+        }
+
+        function clearGraph() { kgSvg.innerHTML = ''; conceptBox.innerHTML = ''; graphNodes = []; graphEdges = []; }
+
+        // ============================================================
+        // CONFIDENCE GAUGE
+        // ============================================================
+        const gCan = document.getElementById('confidenceGauge');
+        const gCtx = gCan.getContext('2d');
+
+        function drawGauge(pct) {
+            const cx = 110, cy = 108, r = 85, sa = Math.PI, ea = 2 * Math.PI, va = sa + (pct / 100) * Math.PI;
+            gCtx.clearRect(0, 0, 220, 120);
+            gCtx.beginPath(); gCtx.arc(cx, cy, r, sa, ea);
+            gCtx.lineWidth = 16; gCtx.strokeStyle = 'rgba(51,75,115,0.2)'; gCtx.lineCap = 'round'; gCtx.stroke();
+            const gr = gCtx.createLinearGradient(15, 0, 205, 0);
+            gr.addColorStop(0, '#ff5252'); gr.addColorStop(0.35, '#ffea00'); gr.addColorStop(0.65, '#00e676'); gr.addColorStop(1, '#00e4ff');
+            if (pct > 0) {
+                gCtx.beginPath(); gCtx.arc(cx, cy, r, sa, va);
+                gCtx.lineWidth = 16; gCtx.strokeStyle = gr; gCtx.lineCap = 'round';
+                gCtx.shadowColor = pct < 40 ? '#ff5252' : pct < 70 ? '#ffea00' : '#00e676'; gCtx.shadowBlur = 15;
+                gCtx.stroke(); gCtx.shadowBlur = 0;
+            }
+            const nl = r - 22, nx = cx + nl * Math.cos(va), ny = cy + nl * Math.sin(va);
+            gCtx.beginPath(); gCtx.moveTo(cx, cy); gCtx.lineTo(nx, ny);
+            gCtx.lineWidth = 2.5; gCtx.strokeStyle = 'rgba(232,234,246,0.8)'; gCtx.lineCap = 'round'; gCtx.stroke();
+            gCtx.beginPath(); gCtx.arc(cx, cy, 5, 0, Math.PI * 2); gCtx.fillStyle = 'rgba(232,234,246,0.9)'; gCtx.fill();
+        }
+
+        function animateGauge(target) {
+            const s = document.getElementById('confidenceSection');
+            s.classList.add('active'); s.style.display = 'flex';
+            const vEl = document.getElementById('gaugeValue');
+            let cur = 0; const step = target / 60;
+            function tick() {
+                cur = Math.min(cur + step, target);
+                drawGauge(cur);
+                vEl.textContent = Math.round(cur) + '%';
+                vEl.style.color = cur < 40 ? '#ff5252' : cur < 70 ? '#ffea00' : '#00e676';
+                if (cur < target) requestAnimationFrame(tick);
+            }
+            requestAnimationFrame(tick);
+        }
+        drawGauge(0);
+
+        // ============================================================
+        // MEMORY RECALL
+        // ============================================================
+        function showMemoryRecall() {
+            return new Promise(res => {
+                const ov = document.getElementById('memoryOverlay');
+                ov.classList.add('active');
+                setTimeout(() => { ov.classList.remove('active'); setTimeout(res, 700); }, 2800);
+            });
+        }
+
+        // ============================================================
+        // TEXT REVEAL
+        // ============================================================
+        async function typeText(text, el, speed = 5) {
+            for (let i = 0; i < text.length; i++) {
+                el.innerHTML += text.charAt(i);
+                if (i % 3 === 0) await new Promise(r => setTimeout(r, speed));
+            }
+        }
+
+        async function revealText(text, container) {
+            const lines = text.split('\n').filter(l => l.trim());
+            if (!lines.length) { await typeText(text, container); return; }
+            const h = document.createElement('div'); h.className = 'reveal-headline'; h.textContent = lines[0];
+            container.appendChild(h); await new Promise(r => setTimeout(r, 500));
+            if (lines.length > 2) {
+                const b = document.createElement('div'); b.className = 'reveal-bullets';
+                b.innerHTML = lines.slice(1, -1).join('\n');
+                container.appendChild(b); await new Promise(r => setTimeout(r, 400));
+            }
+            const d = document.createElement('div'); d.className = 'reveal-details'; container.appendChild(d);
+            const dt = lines.length > 2 ? lines[lines.length - 1] : lines.slice(1).join('\n');
+            await typeText(dt, d, 4);
+        }
+
+        // ============================================================
+        // CREATE AGENT CARD
+        // ============================================================
+        function createAgentCard(stage) {
+            const card = document.createElement('div');
+            card.className = 'agent-card';
+            const hdr = document.createElement('div'); hdr.className = 'agent-card-header';
+            const ico = document.createElement('div'); ico.className = 'agent-card-icon'; ico.textContent = STAGE_ICONS[stage] || '🔹';
+            const ttl = document.createElement('span'); ttl.className = 'agent-card-title'; ttl.textContent = stage;
+            hdr.append(ico, ttl);
+            const cnt = document.createElement('div'); cnt.className = 'agent-card-content';
+            card.append(hdr, cnt);
+            document.getElementById('agentCards').appendChild(card);
+            requestAnimationFrame(() => card.classList.add('visible'));
+            return cnt;
+        }
+
+        function extractConfidence(t) {
+            const m = t.match(/(\d{1,3})\s*%/);
+            if (m) return parseInt(m[1]);
+            const l = t.toLowerCase();
+            if (l.includes('high confidence') || l.includes('strong')) return 82 + Math.floor(Math.random() * 12);
+            if (l.includes('medium') || l.includes('moderate')) return 55 + Math.floor(Math.random() * 15);
+            if (l.includes('low confidence')) return 25 + Math.floor(Math.random() * 15);
+            return 70;
+        }
+
+        // ============================================================
+        // MAIN RESEARCH FLOW
+        // ============================================================
+        async function startResearch() {
+            if (isResearching) return;
+            const q = document.getElementById('questionInput').value.trim();
+            if (!q) return;
+
+            isResearching = true;
+            const btn = document.getElementById('researchBtn');
+            btn.textContent = 'Thinking…';
+            btn.classList.add('thinking');
+
+            // Show sections
+            document.getElementById('timelineSection').classList.add('visible');
+            document.getElementById('mainContent').classList.add('visible');
+
+            // Reset
+            resetTimeline();
+            document.getElementById('agentCards').innerHTML = '';
+            document.getElementById('summaryCard').style.display = 'none';
+            document.getElementById('verdictCard').style.display = 'none';
+            document.getElementById('confidenceSection').classList.remove('active');
+            document.getElementById('confidenceSection').style.display = 'none';
+            document.getElementById('downloadBtn').style.display = 'none';
+            document.getElementById('toggleDetailsBtn').style.display = 'none';
+            document.getElementById('agentCardsWrapper').classList.remove('expanded');
+            detailsVisible = false;
+            document.getElementById('gaugeValue').textContent = '—';
+            clearGraph();
+            drawGauge(0);
+
+            setBrainState('planning');
+            setTimelineStage('planning', 'processing');
+            startStream('planning');
+
+            try {
+                const res = await fetch('/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question: q })
+                });
+                const data = await res.json();
+                stopStream();
+
+                let lastStage = '';
+                for (const step of data.steps) {
+                    const stage = step.stage;
+
+                    if (stage !== lastStage) {
+                        // Complete previous stage
+                        if (lastStage) {
+                            setTimelineStage(lastStage, 'completed');
+                        }
+                        // Start new stage
+                        setBrainState(stage);
+                        setTimelineStage(stage, 'processing');
+                        startStream(stage);
+
+                        if (stage === 'memory') await showMemoryRecall();
+                        await new Promise(r => setTimeout(r, 900));
+                        stopStream();
+                        lastStage = stage;
+                    }
+
+                    // Add agent card (hidden by default)
+                    const el = createAgentCard(stage);
+                    await revealText(step.content, el);
+
+                    if (stage === 'research' || stage === 'analysis') {
+                        const concepts = extractConcepts(step.content);
+                        for (const c of concepts) { addNode(c); await new Promise(r => setTimeout(r, 180)); }
+                    }
+                    await new Promise(r => setTimeout(r, 350));
+                }
+
+                // Complete last stage
+                if (lastStage) setTimelineStage(lastStage, 'completed');
+
+                // Decision stage animation
+                setBrainState('decision');
+                setTimelineStage('decision', 'processing');
+                startStream('decision');
+                await new Promise(r => setTimeout(r, 1000));
+                stopStream();
+                setTimelineStage('decision', 'completed');
+
+                // Show FINAL ANSWER first (summary + verdict)
+                const summaryCard = document.getElementById('summaryCard');
+                summaryCard.style.display = 'block';
+                summaryCard.classList.add('agent-card', 'final-card', 'visible');
+                const summaryEl = document.getElementById('summaryContent');
+                summaryEl.innerHTML = '';
+                await revealText(data.summary, summaryEl);
+
+                const verdictCard = document.getElementById('verdictCard');
+                verdictCard.style.display = 'block';
+                verdictCard.classList.add('agent-card', 'final-card', 'visible');
+                const verdictEl = document.getElementById('verdictContent');
+                verdictEl.innerHTML = '';
+                await revealText(data.verdict, verdictEl);
+
+                // Confidence gauge
+                animateGauge(extractConfidence(data.verdict));
+
+                // Show toggle button for agent details
+                document.getElementById('toggleDetailsBtn').style.display = 'inline-flex';
+
+                // Memory stage
+                setBrainState('memory');
+                setTimelineStage('memory', 'processing');
+                await new Promise(r => setTimeout(r, 1200));
+                setTimelineStage('memory', 'completed');
+                setBrainState('idle');
+
+                // PDF
+                if (data.pdf) {
+                    const dl = document.getElementById('downloadBtn');
+                    dl.href = '/' + data.pdf; dl.style.display = 'inline-flex';
+                }
+
+            } catch (err) {
+                stopStream();
+                const errEl = createAgentCard('planning');
+                errEl.textContent = '⚠ Error: ' + err.message;
+                setBrainState('idle');
+            }
+
+            isResearching = false;
+            btn.textContent = 'Research';
+            btn.classList.remove('thinking');
+        }
+
+        document.getElementById('questionInput').addEventListener('keydown', e => {
+            if (e.key === 'Enter') startResearch();
+        });
+    </script>
 </body>
 
 </html>
