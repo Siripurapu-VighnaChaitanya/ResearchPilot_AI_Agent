@@ -1,64 +1,214 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>ResearchPilot AI</title>
+
+    <style>
+        body {
+            background: #020617;
+            color: #e5e7eb;
+            font-family: Segoe UI, Arial;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 80%;
+            margin: auto;
+            text-align: center;
+            padding-top: 30px;
+        }
+
+        h1 {
+            margin-bottom: 5px
+        }
+
+        h3 {
+            color: #94a3b8;
+            font-weight: normal
+        }
+
+        input {
+            width: 70%;
+            padding: 12px;
+            border-radius: 8px;
+            border: none;
+            background: #111827;
+            color: white;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 18px;
+            border-radius: 8px;
+            border: none;
+            background: #22c55e;
+            color: black;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #16a34a
+        }
+
+        #thinking {
+            margin-top: 25px;
+            color: #22c55e;
+            display: none;
+        }
+
+        .agent-box {
+            background: #0f172a;
+            border: 1px solid #334155;
+            padding: 16px;
+            margin: 14px auto;
+            width: 80%;
+            border-radius: 12px;
+            text-align: left;
+            transition: 0.3s;
+        }
+
+        .agent-box:hover {
+            border-color: #22c55e;
+            transform: scale(1.01);
+        }
+
+        .agent-title {
+            font-weight: bold;
+            color: #22c55e;
+            margin-bottom: 8px;
+        }
+
+        pre {
+            white-space: pre-wrap;
+            font-family: monospace;
+            color: #e5e7eb;
+        }
+
+        .final {
+            background: #020617;
+            border: 2px solid #22c55e;
+        }
+    </style>
 </head>
-<body style="background:black;color:white;font-family:Arial;text-align:center">
 
-<h1>🧠 ResearchPilot AI Agent</h1>
-<h3>Autonomous Research Intelligence Hub</h3>
+<body>
 
-<input id="q" style="width:60%;padding:10px" placeholder="Ask research question">
-<button onclick="ask()">Research</button>
+    <div class="container">
 
-<pre id="output" style="margin-top:40px;text-align:left;width:70%;margin-left:auto;margin-right:auto"></pre>
+        <h1>🧠 ResearchPilot AI Agent</h1>
+        <h3>Autonomous Research Intelligence Hub</h3>
 
-<script>
+        <input id="q" placeholder="Ask a deep research question">
+        <button onclick="ask()">Research</button>
 
-async function typeWriter(text, element, speed=15){
-    for(let i=0;i<text.length;i++){
-        element.innerHTML += text.charAt(i);
-        await new Promise(r=>setTimeout(r,speed));
-    }
-}
+        <div id="thinking">🧠 Agents are thinking...</div>
 
-async function ask(){
+        <div id="steps"></div>
 
-    const output=document.getElementById("output");
-    output.innerHTML="🧠 Initializing Research Agents...\n\n";
+        <div id="summaryBox" class="agent-box final" style="display:none">
+            <div class="agent-title">📊 Summary</div>
+            <pre id="summary"></pre>
+        </div>
 
-    let question=document.getElementById("q").value;
+        <div id="verdictBox" class="agent-box final" style="display:none">
+            <div class="agent-title">⚖️ Final Verdict</div>
+            <pre id="verdict"></pre>
+        </div>
+        <div style="margin-top:20px">
+            <a id="downloadBtn" href="#" target="_blank" style="
+        display:none;
+        background:#22c55e;
+        padding:12px 18px;
+        border-radius:8px;
+        color:black;
+        font-weight:bold;
+        text-decoration:none;">
+                🧾 Download Research Paper
+            </a>
+        </div>
 
-    let res=await fetch("/ask",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({question:question})
-    });
+    </div>
 
-    let data=await res.json();
+    <script>
 
-    output.innerHTML+="\n=== LIVE REASONING ===\n\n";
+        const stageBoxes = {};
 
-    for(const step of data.steps){
+        async function typeAppend(text, element, speed = 8) {
+            for (let i = 0; i < text.length; i++) {
+                element.innerHTML += text.charAt(i);
+                await new Promise(r => setTimeout(r, speed));
+            }
+        }
 
-        let div=document.createElement("div");
-        output.appendChild(div);
+        function getOrCreateStageBox(stage) {
 
-        await typeWriter(
-            step.stage.toUpperCase()+": "+step.content+"\n\n",
-            div,
-            10
-        );
-    }
+            if (stageBoxes[stage]) return stageBoxes[stage];
 
-    output.innerHTML+="\n=== SUMMARY ===\n\n";
-    await typeWriter(data.summary+"\n\n", output, 8);
+            const box = document.createElement("div");
+            box.className = "agent-box";
 
-    output.innerHTML+="\n=== FINAL VERDICT ===\n\n";
-    await typeWriter(data.verdict, output, 8);
-}
+            const title = document.createElement("div");
+            title.className = "agent-title";
+            title.innerText = stage.toUpperCase();
 
-</script>
+            const content = document.createElement("pre");
+
+            box.appendChild(title);
+            box.appendChild(content);
+
+            document.getElementById("steps").appendChild(box);
+
+            stageBoxes[stage] = content;
+            return content;
+        }
+
+        async function ask() {
+
+            document.getElementById("steps").innerHTML = "";
+            document.getElementById("summaryBox").style.display = "none";
+            document.getElementById("verdictBox").style.display = "none";
+            document.getElementById("thinking").style.display = "block";
+
+            Object.keys(stageBoxes).forEach(k => delete stageBoxes[k]);
+
+            let question = document.getElementById("q").value;
+
+            let res = await fetch("/ask", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ question })
+            });
+
+            let data = await res.json();
+
+            document.getElementById("thinking").style.display = "none";
+
+            for (const step of data.steps) {
+
+                const contentBox = getOrCreateStageBox(step.stage);
+
+                await typeAppend(step.content + "\n\n", contentBox, 6);
+            }
+
+            document.getElementById("summaryBox").style.display = "block";
+            document.getElementById("summary").innerHTML = "";
+            await typeAppend(data.summary, document.getElementById("summary"), 6);
+
+            document.getElementById("verdictBox").style.display = "block";
+            document.getElementById("verdict").innerHTML = "";
+            await typeAppend(data.verdict, document.getElementById("verdict"), 6);
+            if (data.pdf) {
+                const btn = document.getElementById("downloadBtn");
+                btn.href = "/" + data.pdf;
+                btn.style.display = "inline-block";
+            }
+        }
+
+    </script>
 
 </body>
+
 </html>
