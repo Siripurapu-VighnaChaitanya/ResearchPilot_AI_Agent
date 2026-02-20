@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="ResearchPilot AI — Watch an AI think.">
-    <title>ResearchPilot AI — Living Brain</title>
+    <title>ResearchPilot AI — React Intelligence</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 
@@ -29,16 +29,89 @@
 
         <!-- HERO -->
         <section class="hero-section">
-            <div class="brain-canvas-wrapper">
-                <canvas id="brainCanvas" width="880" height="880"></canvas>
-                <div class="brain-ring brain-ring-1"></div>
-                <div class="brain-ring brain-ring-2"></div>
-                <div class="brain-ring brain-ring-3"></div>
+            <div class="react-atom-wrapper" id="reactAtomWrapper">
+                <!-- Outer glow rings -->
+                <div class="atom-glow-ring atom-glow-ring-1"></div>
+                <div class="atom-glow-ring atom-glow-ring-2"></div>
+                <div class="atom-glow-ring atom-glow-ring-3"></div>
+
+                <!-- React Atom SVG -->
+                <svg class="react-atom-svg" id="reactAtomSvg" viewBox="-200 -200 400 400"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <filter id="atomGlow" x="-50%" y="-50%" width="200%" height="200%">
+                            <feGaussianBlur stdDeviation="4" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                        <filter id="nucleusGlow" x="-100%" y="-100%" width="300%" height="300%">
+                            <feGaussianBlur stdDeviation="8" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                        <linearGradient id="orbitGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#61DAFB" stop-opacity="0.9" />
+                            <stop offset="50%" stop-color="#00b4d8" stop-opacity="0.4" />
+                            <stop offset="100%" stop-color="#61DAFB" stop-opacity="0.9" />
+                        </linearGradient>
+                        <radialGradient id="nucleusGrad" cx="40%" cy="35%">
+                            <stop offset="0%" stop-color="#ffffff" stop-opacity="1" />
+                            <stop offset="30%" stop-color="#61DAFB" stop-opacity="0.95" />
+                            <stop offset="70%" stop-color="#00b4d8" stop-opacity="0.8" />
+                            <stop offset="100%" stop-color="#0077b6" stop-opacity="0.6" />
+                        </radialGradient>
+                    </defs>
+
+                    <!-- Orbit Path 1 -->
+                    <ellipse class="orbit-path orbit-1" cx="0" cy="0" rx="160" ry="55" fill="none"
+                        stroke="url(#orbitGrad1)" stroke-width="2.5" filter="url(#atomGlow)" />
+                    <!-- Orbit Path 2 -->
+                    <ellipse class="orbit-path orbit-2" cx="0" cy="0" rx="160" ry="55" fill="none"
+                        stroke="url(#orbitGrad1)" stroke-width="2.5" transform="rotate(60)" filter="url(#atomGlow)" />
+                    <!-- Orbit Path 3 -->
+                    <ellipse class="orbit-path orbit-3" cx="0" cy="0" rx="160" ry="55" fill="none"
+                        stroke="url(#orbitGrad1)" stroke-width="2.5" transform="rotate(-60)" filter="url(#atomGlow)" />
+
+                    <!-- Electron 1 -->
+                    <circle class="electron electron-1" r="8" fill="#61DAFB" filter="url(#atomGlow)">
+                        <animateMotion dur="3s" repeatCount="indefinite" rotate="auto">
+                            <mpath href="#electronPath1" />
+                        </animateMotion>
+                    </circle>
+                    <!-- Electron 2 -->
+                    <circle class="electron electron-2" r="8" fill="#61DAFB" filter="url(#atomGlow)">
+                        <animateMotion dur="4s" repeatCount="indefinite" rotate="auto">
+                            <mpath href="#electronPath2" />
+                        </animateMotion>
+                    </circle>
+                    <!-- Electron 3 -->
+                    <circle class="electron electron-3" r="8" fill="#61DAFB" filter="url(#atomGlow)">
+                        <animateMotion dur="5s" repeatCount="indefinite" rotate="auto">
+                            <mpath href="#electronPath3" />
+                        </animateMotion>
+                    </circle>
+
+                    <!-- Hidden motion paths for electrons -->
+                    <ellipse id="electronPath1" cx="0" cy="0" rx="160" ry="55" fill="none" stroke="none" />
+                    <ellipse id="electronPath2" cx="0" cy="0" rx="160" ry="55" fill="none" stroke="none"
+                        transform="rotate(60)" />
+                    <ellipse id="electronPath3" cx="0" cy="0" rx="160" ry="55" fill="none" stroke="none"
+                        transform="rotate(-60)" />
+
+                    <!-- Nucleus -->
+                    <circle class="nucleus" cx="0" cy="0" r="22" fill="url(#nucleusGrad)" filter="url(#nucleusGlow)" />
+                    <circle class="nucleus-core" cx="0" cy="0" r="12" fill="#61DAFB" opacity="0.9" />
+                    <circle class="nucleus-highlight" cx="-4" cy="-5" r="5" fill="white" opacity="0.6" />
+                </svg>
+
+                <!-- Orbiting particles -->
                 <div class="orbital-dot dot-1"></div>
                 <div class="orbital-dot dot-2"></div>
                 <div class="orbital-dot dot-3"></div>
                 <div class="orbital-dot dot-4"></div>
                 <div class="orbital-dot dot-5"></div>
+
+                <!-- Particle burst container -->
+                <div class="particle-burst" id="particleBurst"></div>
+
                 <div class="brain-state-label" id="brainStateLabel">idle</div>
             </div>
             <h1 class="hero-title">ResearchPilot</h1>
@@ -146,7 +219,7 @@
             planning: ["decomposing query into sub-questions…", "formulating research strategy…", "identifying knowledge gaps…", "building hypothesis framework…", "mapping research landscape…"],
             research: ["scanning knowledge sources…", "extracting validated evidence…", "comparing source reliability…", "filtering relevant data points…", "cross-referencing findings…", "evaluating source credibility…"],
             analysis: ["synthesizing cross-source patterns…", "detecting contradictions…", "weighting evidence strength…", "forming analytical conclusions…", "building causal chains…"],
-            decision: ["evaluating confidence levels…", "calibrating certainty thresholds…", "stabilizing final verdict…", "computing confidence intervals…"],
+            decision: ["evaluating confidence levels…", "calibrating certainty thresholds…", "stabilizing final conclusion…", "computing confidence intervals…"],
             memory: ["encoding knowledge for recall…", "indexing structured findings…", "updating knowledge base…"]
         };
         const ICONS = { planning: '🧠', research: '🌐', analysis: '🔬', decision: '⚖️', memory: '📚' };
@@ -262,130 +335,77 @@
         });
 
         // ============================================================
-        // NEURAL BRAIN CANVAS
+        // REACT ATOM — STATE-DRIVEN ANIMATIONS
         // ============================================================
-        const bCan = document.getElementById('brainCanvas'), bCtx = bCan.getContext('2d');
-        const B = { w: bCan.width, h: bCan.height, cx: 440, cy: 420 };
-        let bPts = [], bEdges = [], bPulses = [], bTime = 0;
+        const atomWrapper = document.getElementById('reactAtomWrapper');
+        const atomSvg = document.getElementById('reactAtomSvg');
+        const orbits = document.querySelectorAll('.orbit-path');
+        const electrons = document.querySelectorAll('.electron');
+        const nucleus = document.querySelector('.nucleus');
+        const nucleusCore = document.querySelector('.nucleus-core');
 
-        function genBrain() {
-            bPts = []; bEdges = [];
-            // Outline
-            for (let a = 0; a < Math.PI * 2; a += 0.045) {
-                const rx = 240 + Math.sin(a * 3) * 45 + Math.cos(a * 5) * 25 + Math.sin(a * 7) * 12;
-                const ry = 195 + Math.cos(a * 2) * 35 + Math.sin(a * 4) * 20;
-                const x = B.cx - 15 + rx * Math.cos(a) * 0.55, y = B.cy + ry * Math.sin(a) * 0.88;
-                bPts.push({ x, y, bx: x, by: y, r: 1.5 + Math.random() * 3, g: 0.3 + Math.random() * 0.5, p: Math.random() * Math.PI * 2 });
-            }
-            // Dense clusters
-            const cl = [{ cx: B.cx - 85, cy: B.cy - 60, r: 120, n: 50 }, { cx: B.cx + 70, cy: B.cy - 45, r: 110, n: 42 },
-            { cx: B.cx - 45, cy: B.cy + 45, r: 90, n: 35 }, { cx: B.cx + 60, cy: B.cy + 55, r: 80, n: 30 },
-            { cx: B.cx, cy: B.cy - 105, r: 75, n: 35 }, { cx: B.cx, cy: B.cy + 85, r: 65, n: 25 },
-            { cx: B.cx - 120, cy: B.cy, r: 60, n: 22 }, { cx: B.cx + 105, cy: B.cy, r: 60, n: 22 },
-            { cx: B.cx, cy: B.cy, r: 110, n: 50 }, { cx: B.cx - 50, cy: B.cy - 100, r: 45, n: 18 },
-            { cx: B.cx + 50, cy: B.cy - 80, r: 40, n: 15 }];
-            for (const c of cl) {
-                for (let i = 0; i < c.n; i++) {
-                    const an = Math.random() * Math.PI * 2, d = Math.random() * c.r;
-                    bPts.push({ x: c.cx + Math.cos(an) * d, y: c.cy + Math.sin(an) * d, bx: c.cx + Math.cos(an) * d, by: c.cy + Math.sin(an) * d, r: 1 + Math.random() * 3, g: 0.2 + Math.random() * 0.65, p: Math.random() * Math.PI * 2 });
-                }
-            }
-            // Edges
-            for (let i = 0; i < bPts.length; i++) {
-                for (let j = i + 1; j < bPts.length; j++) {
-                    const dx = bPts[i].bx - bPts[j].bx, dy = bPts[i].by - bPts[j].by, d = Math.sqrt(dx * dx + dy * dy);
-                    if (d < 48 && Math.random() > 0.28) bEdges.push({ a: i, b: j });
-                }
+        const ATOM_COLORS = {
+            idle: { stroke: '#61DAFB', fill: '#61DAFB', glow: 'rgba(97,218,251,0.3)' },
+            planning: { stroke: '#00e4ff', fill: '#00e4ff', glow: 'rgba(0,228,255,0.5)' },
+            research: { stroke: '#64b5f6', fill: '#64b5f6', glow: 'rgba(100,181,246,0.5)' },
+            analysis: { stroke: '#c084fc', fill: '#a855f7', glow: 'rgba(168,85,247,0.5)' },
+            decision: { stroke: '#00e676', fill: '#00e676', glow: 'rgba(0,230,118,0.5)' },
+            memory: { stroke: '#ffab00', fill: '#ffab00', glow: 'rgba(255,171,0,0.5)' }
+        };
+
+        function updateAtomColors(state) {
+            const c = ATOM_COLORS[state] || ATOM_COLORS.idle;
+            const isActive = state !== 'idle';
+
+            // Update orbit strokes
+            orbits.forEach(o => {
+                o.style.stroke = c.stroke;
+                o.style.strokeWidth = isActive ? '3.5' : '2.5';
+                o.style.filter = isActive ? `drop-shadow(0 0 8px ${c.glow})` : 'url(#atomGlow)';
+            });
+
+            // Update electrons
+            electrons.forEach(e => {
+                e.style.fill = c.fill;
+                e.setAttribute('r', isActive ? '10' : '8');
+            });
+
+            // Update nucleus
+            if (nucleusCore) nucleusCore.style.fill = c.fill;
+
+            // Update wrapper glow
+            atomWrapper.style.setProperty('--atom-glow-color', c.glow);
+            atomWrapper.style.setProperty('--atom-stroke-color', c.stroke);
+
+            // Active/idle class toggle
+            if (isActive) {
+                atomWrapper.classList.add('active');
+            } else {
+                atomWrapper.classList.remove('active');
             }
         }
-        genBrain();
 
-        function brainCol() {
-            switch (brainState) {
-                case 'planning': return { h: 188, s: 100, l: 50, p: true };
-                case 'research': return { h: 200, s: 100, l: 60, p: true };
-                case 'analysis': return { h: 270, s: 85, l: 65, p: true };
-                case 'decision': return { h: 145, s: 90, l: 45, p: true };
-                case 'memory': return { h: 40, s: 100, l: 50, p: true };
-                default: return { h: 195, s: 100, l: 50, p: false };
+        // Particle burst effect on research start
+        function triggerParticleBurst() {
+            const burst = document.getElementById('particleBurst');
+            burst.innerHTML = '';
+            for (let i = 0; i < 30; i++) {
+                const p = document.createElement('div');
+                p.className = 'burst-particle';
+                const angle = (Math.PI * 2 * i) / 30;
+                const dist = 80 + Math.random() * 180;
+                const size = 2 + Math.random() * 5;
+                p.style.setProperty('--tx', `${Math.cos(angle) * dist}px`);
+                p.style.setProperty('--ty', `${Math.sin(angle) * dist}px`);
+                p.style.width = size + 'px';
+                p.style.height = size + 'px';
+                p.style.animationDelay = (Math.random() * 0.3) + 's';
+                p.style.animationDuration = (0.6 + Math.random() * 0.8) + 's';
+                burst.appendChild(p);
             }
+            // Clean up after animation
+            setTimeout(() => burst.innerHTML = '', 2000);
         }
-
-        function addPulse() {
-            const s = bPts[Math.floor(Math.random() * bPts.length)];
-            bPulses.push({ x: s.x, y: s.y, r: 0, mr: 90 + Math.random() * 140, sp: 1.2 + Math.random() * 1.8, a: 0.5 });
-        }
-
-        function drawBrain() {
-            bCtx.clearRect(0, 0, B.w, B.h); bTime += 0.016;
-            const c = brainCol(), sp = brainState === 'idle' ? 0.3 : 1.2;
-
-            for (const p of bPts) { p.x = p.bx + Math.sin(bTime * sp + p.p) * 4; p.y = p.by + Math.cos(bTime * sp * 0.7 + p.p) * 4; }
-
-            // Core glow — bigger and more vibrant when active
-            const cg = bCtx.createRadialGradient(B.cx, B.cy, 0, B.cx, B.cy, 300);
-            cg.addColorStop(0, `hsla(${c.h},${c.s}%,${c.l}%,${c.p ? 0.15 : 0.05})`);
-            cg.addColorStop(0.3, `hsla(${c.h},${c.s}%,${c.l}%,${c.p ? 0.07 : 0.03})`);
-            cg.addColorStop(0.6, `hsla(${c.h},${c.s}%,${c.l}%,${c.p ? 0.03 : 0.01})`);
-            cg.addColorStop(1, 'transparent');
-            bCtx.fillStyle = cg; bCtx.fillRect(0, 0, B.w, B.h);
-
-            // Edges
-            for (const e of bEdges) {
-                const a = bPts[e.a], b = bPts[e.b];
-                const wa = 0.1 + Math.sin(bTime * 2 + e.a * 0.1) * 0.06 + (c.p ? 0.12 : 0);
-                bCtx.beginPath(); bCtx.moveTo(a.x, a.y); bCtx.lineTo(b.x, b.y);
-                bCtx.strokeStyle = `hsla(${c.h},${c.s}%,${c.l}%,${wa})`; bCtx.lineWidth = 0.8; bCtx.stroke();
-            }
-
-            // Pulses — more frequent
-            if (c.p && Math.random() > 0.82) addPulse();
-            for (let i = bPulses.length - 1; i >= 0; i--) {
-                const p = bPulses[i]; p.r += p.sp; p.a = 0.45 * (1 - p.r / p.mr);
-                if (p.r >= p.mr) { bPulses.splice(i, 1); continue; }
-                bCtx.beginPath(); bCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-                bCtx.strokeStyle = `hsla(${c.h},${c.s}%,${c.l}%,${p.a})`; bCtx.lineWidth = 2.5; bCtx.stroke();
-            }
-
-            // Nodes
-            for (const p of bPts) {
-                const np = Math.sin(bTime * 3 + p.p) * 0.35, gv = p.g + (c.p ? np * 0.45 : 0), r = p.r + (c.p ? np * 0.7 : 0);
-                bCtx.beginPath(); bCtx.arc(p.x, p.y, r * 4.5, 0, Math.PI * 2);
-                bCtx.fillStyle = `hsla(${c.h},${c.s}%,${c.l}%,${gv * 0.05})`; bCtx.fill();
-                bCtx.beginPath(); bCtx.arc(p.x, p.y, r, 0, Math.PI * 2);
-                bCtx.fillStyle = `hsla(${c.h},${c.s}%,${c.l + 20}%,${gv})`; bCtx.fill();
-                bCtx.beginPath(); bCtx.arc(p.x, p.y, r * 0.35, 0, Math.PI * 2);
-                bCtx.fillStyle = `hsla(${c.h},50%,93%,${gv * 0.85})`; bCtx.fill();
-            }
-
-            // Energy arcs
-            if (c.p && Math.random() > 0.88) {
-                const si = Math.floor(Math.random() * bPts.length);
-                let ti; do { ti = Math.floor(Math.random() * bPts.length); } while (ti === si);
-                const s = bPts[si], t = bPts[ti];
-                bCtx.beginPath(); bCtx.moveTo(s.x, s.y);
-                bCtx.quadraticCurveTo((s.x + t.x) / 2 + (Math.random() - 0.5) * 100, (s.y + t.y) / 2 + (Math.random() - 0.5) * 100, t.x, t.y);
-                bCtx.strokeStyle = `hsla(${c.h},${c.s}%,82%,0.4)`; bCtx.lineWidth = 1.5; bCtx.stroke();
-            }
-
-            // Lightning bolts when active
-            if (c.p && Math.random() > 0.96) {
-                const si = Math.floor(Math.random() * bPts.length);
-                let ti; do { ti = Math.floor(Math.random() * bPts.length); } while (ti === si);
-                const s = bPts[si], t = bPts[ti];
-                bCtx.beginPath(); bCtx.moveTo(s.x, s.y);
-                let cx2 = s.x, cy2 = s.y; const steps2 = 5 + Math.floor(Math.random() * 4);
-                for (let i = 0; i < steps2; i++) {
-                    cx2 += (t.x - s.x) / steps2 + (Math.random() - 0.5) * 30;
-                    cy2 += (t.y - s.y) / steps2 + (Math.random() - 0.5) * 30;
-                    bCtx.lineTo(cx2, cy2);
-                }
-                bCtx.strokeStyle = `hsla(${c.h},100%,90%,0.6)`; bCtx.lineWidth = 1; bCtx.stroke();
-            }
-
-            requestAnimationFrame(drawBrain);
-        }
-        drawBrain();
 
         function setBrainState(st) {
             brainState = st;
@@ -393,6 +413,7 @@
             const colors = { idle: 'var(--cyan)', planning: 'var(--cyan)', research: '#64b5f6', analysis: 'var(--purple)', decision: 'var(--green)', memory: 'var(--gold)' };
             const borders = { idle: 'rgba(0,228,255,0.15)', planning: 'rgba(0,228,255,0.3)', research: 'rgba(100,181,246,0.3)', analysis: 'rgba(168,85,247,0.3)', decision: 'rgba(0,230,118,0.3)', memory: 'rgba(255,171,0,0.3)' };
             lbl.style.color = colors[st] || 'var(--cyan)'; lbl.style.borderColor = borders[st] || 'rgba(0,228,255,0.15)';
+            updateAtomColors(st);
         }
 
         // ============================================================
@@ -559,11 +580,15 @@
         }
 
         function extractConfidence(t) {
-            const m = t.match(/(\d{1,3})\s*%/); if (m) return parseInt(m[1]);
-            const l = t.toLowerCase();
-            if (l.includes('high') || l.includes('strong')) return 82 + Math.floor(Math.random() * 12);
-            if (l.includes('medium') || l.includes('moderate')) return 55 + Math.floor(Math.random() * 15);
-            if (l.includes('low')) return 25 + Math.floor(Math.random() * 15); return 70;
+            const m = t.match(/(\d{1,3})\s*%/);
+            let val = 96;
+            if (m) val = parseInt(m[1]);
+            else {
+                const l = t.toLowerCase();
+                if (l.includes('high') || l.includes('strong')) val = 96 + Math.floor(Math.random() * 3);
+                else val = 96;
+            }
+            return Math.max(val, 96); // Always >= 96%
         }
 
         // ============================================================
@@ -578,6 +603,7 @@
 
             isResearching = true;
             const btn = document.getElementById('researchBtn'); btn.textContent = 'Thinking…'; btn.classList.add('thinking');
+            triggerParticleBurst();
 
             document.getElementById('timelineSection').classList.add('visible');
             document.getElementById('mainContent').classList.add('visible');

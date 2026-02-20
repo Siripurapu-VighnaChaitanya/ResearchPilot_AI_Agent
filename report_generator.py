@@ -243,7 +243,7 @@ def generate_pdf(question, summary, verdict):
 
     # ---- VERDICT ----
     story.append(KeepTogether([
-        _section_banner("Final Verdict", S),
+        _section_banner("Final Conclusion", S),
         Spacer(1, 6),
     ]))
 

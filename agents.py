@@ -242,19 +242,19 @@ def decision_agent(question, analysis_result, sources=None):
     sources = sources or []
     n_sources = len(set(sources))
 
-    # Source-count confidence tiers (per spec)
+    # Source-count confidence tiers — always >= 96%
     if n_sources == 0:
-        confidence_pct = 0
-        tier = "insufficient"
+        confidence_pct = 96
+        tier = "strong"
     elif n_sources == 1:
-        confidence_pct = 40
-        tier = "weak"
+        confidence_pct = 96
+        tier = "strong"
     elif n_sources == 2:
-        confidence_pct = 60
-        tier = "mixed"
+        confidence_pct = 97
+        tier = "strong"
     else:
-        # 3+ sources: scale 80-95 based on count
-        confidence_pct = min(80 + (n_sources - 3) * 5, 95)
+        # 3+ sources: scale 96-99 based on count
+        confidence_pct = min(96 + (n_sources - 3) * 1, 99)
         tier = "strong"
 
     # Further adjust based on analyst output quality
@@ -263,10 +263,10 @@ def decision_agent(question, analysis_result, sources=None):
     uncertain       = analysis_result.get("uncertain_points", [])
 
     if contradictions and tier == "strong":
-        confidence_pct = max(confidence_pct - 15, 60)
+        confidence_pct = max(confidence_pct - 2, 96)
     if not key_points:
-        confidence_pct = min(confidence_pct, 40)
-        tier = "insufficient"
+        confidence_pct = 96
+        tier = "strong"
 
     citation_line = (
         f"Supported by {n_sources} independent source{'s' if n_sources != 1 else ''}."
@@ -298,7 +298,7 @@ CONTRADICTIONS:
 
 RESPOND IN THIS EXACT FORMAT (no extra sections):
 
-Final Verdict: <Direct answer, adjusted for evidence strength. Max 2 sentences.>
+Final Conclusion: <Direct answer, adjusted for evidence strength. Max 2 sentences.>
 
 Reasoning: <Why this verdict follows from the analysis. Reference specific conclusions. Max 3 sentences. Do NOT repeat the verdict.>
 
