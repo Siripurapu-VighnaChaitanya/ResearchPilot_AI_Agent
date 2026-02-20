@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ResearchPilot AI</title>
+</head>
+<body style="background:black;color:white;font-family:Arial;text-align:center">
+
+<h1>🧠 ResearchPilot AI Agent</h1>
+<h3>Autonomous Research Intelligence Hub</h3>
+
+<input id="q" style="width:60%;padding:10px" placeholder="Ask research question">
+<button onclick="ask()">Research</button>
+
+<pre id="output" style="margin-top:40px;text-align:left;width:70%;margin-left:auto;margin-right:auto"></pre>
+
+<script>
+
+async function typeWriter(text, element, speed=15){
+    for(let i=0;i<text.length;i++){
+        element.innerHTML += text.charAt(i);
+        await new Promise(r=>setTimeout(r,speed));
+    }
+}
+
+async function ask(){
+
+    const output=document.getElementById("output");
+    output.innerHTML="🧠 Initializing Research Agents...\n\n";
+
+    let question=document.getElementById("q").value;
+
+    let res=await fetch("/ask",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({question:question})
+    });
+
+    let data=await res.json();
+
+    output.innerHTML+="\n=== LIVE REASONING ===\n\n";
+
+    for(const step of data.steps){
+
+        let div=document.createElement("div");
+        output.appendChild(div);
+
+        await typeWriter(
+            step.stage.toUpperCase()+": "+step.content+"\n\n",
+            div,
+            10
+        );
+    }
+
+    output.innerHTML+="\n=== SUMMARY ===\n\n";
+    await typeWriter(data.summary+"\n\n", output, 8);
+
+    output.innerHTML+="\n=== FINAL VERDICT ===\n\n";
+    await typeWriter(data.verdict, output, 8);
+}
+
+</script>
+
+</body>
+</html>
