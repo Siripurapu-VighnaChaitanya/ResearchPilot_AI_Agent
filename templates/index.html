@@ -532,57 +532,71 @@
             if (!kgAnimId) startKGLoop();
         }
 
+        // Physics constants — tuned for smooth, calm behaviour
+        const REPEL = 600, SPRING_LEN = 90, SPRING_K = 0.025, DAMP = 0.80, CENTER_G = 0.0006;
+        let _kgLastTs = null;
+
         function startKGLoop() {
+            _kgLastTs = null;
             kgAnimId = requestAnimationFrame(kgTick);
         }
 
-        function kgTick() {
-            kgTime += 0.016;
-            physicsStep();
+        function kgTick(ts) {
+            // Delta-time capped at 33ms (≈30fps minimum) so fast monitors
+            // don't make physics explode, and slow ones don't teleport nodes.
+            if (_kgLastTs === null) _kgLastTs = ts;
+            const rawDt = (ts - _kgLastTs) / 1000;   // seconds
+            const dt = Math.min(rawDt, 0.033);       // cap at 33ms
+            _kgLastTs = ts;
+
+            kgTime += dt;
+            physicsStep(dt);
             drawKG();
             kgAnimId = requestAnimationFrame(kgTick);
         }
 
-        const REPEL = 1800, SPRING_LEN = 80, SPRING_K = 0.04, DAMP = 0.88, GRAVITY = 0.015;
-
-        function physicsStep() {
+        function physicsStep(dt) {
             const W = kgCanvas.width, H = kgCanvas.height;
             const cx = W / 2, cy = H / 2;
+            const scale = dt * 60; // normalise forces to 60fps equivalent
 
-            // Repulsion between all node pairs
             for (let i = 0; i < kgNodes.length; i++) {
                 const a = kgNodes[i];
-                // Soft gravity toward center
-                a.vx += (cx - a.x) * GRAVITY * 0.01;
-                a.vy += (cy - a.y) * GRAVITY * 0.01;
+                // Gentle gravity toward centre
+                a.vx += (cx - a.x) * CENTER_G * scale;
+                a.vy += (cy - a.y) * CENTER_G * scale;
+
+                // Node-to-node repulsion
                 for (let j = i + 1; j < kgNodes.length; j++) {
                     const b = kgNodes[j];
                     const dx = a.x - b.x, dy = a.y - b.y;
-                    const dist2 = dx * dx + dy * dy + 1;
-                    const f = REPEL / dist2;
+                    const dist2 = dx * dx + dy * dy + 0.01;
+                    const f = (REPEL / dist2) * scale;
                     a.vx += dx * f; a.vy += dy * f;
                     b.vx -= dx * f; b.vy -= dy * f;
                 }
             }
 
-            // Spring attraction along edges
+            // Edge springs
             for (const e of kgEdges) {
-                if (e.prog < 1) e.prog = Math.min(1, e.prog + 0.04);
+                // Fade-in progress (independent of dt for visual consistency)
+                if (e.prog < 1) e.prog = Math.min(1, e.prog + 0.03);
                 const a = kgNodes[e.a], b = kgNodes[e.b];
                 const dx = b.x - a.x, dy = b.y - a.y;
                 const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                const stretch = (dist - SPRING_LEN) * SPRING_K;
+                const stretch = (dist - SPRING_LEN) * SPRING_K * scale;
                 const fx = (dx / dist) * stretch, fy = (dy / dist) * stretch;
                 a.vx += fx; a.vy += fy;
                 b.vx -= fx; b.vy -= fy;
             }
 
-            // Integrate + damp + clamp to canvas
+            // Integrate velocities
+            const dampFactor = Math.pow(DAMP, scale); // frame-rate-independent damping
             for (const n of kgNodes) {
-                n.vx *= DAMP; n.vy *= DAMP;
-                n.x = Math.max(n.r + 6, Math.min(W - n.r - 6, n.x + n.vx));
-                n.y = Math.max(n.r + 14, Math.min(H - n.r - 6, n.y + n.vy));
-                n.pulse += 0.04;
+                n.vx *= dampFactor; n.vy *= dampFactor;
+                n.x = Math.max(n.r + 8, Math.min(W - n.r - 8, n.x + n.vx * scale));
+                n.y = Math.max(n.r + 18, Math.min(H - n.r - 8, n.y + n.vy * scale));
+                n.pulse += 0.018; // slow gentle pulse
             }
         }
 
@@ -598,10 +612,10 @@
                 const alpha = isHighlighted ? 0.45 : 0.15;
                 const dx = b.x - a.x, dy = b.y - a.y;
                 const len = Math.sqrt(dx * dx + dy * dy);
-                // Animated dash
+                // Animated dash — slow, calm flow
                 kgCtx.save();
-                kgCtx.setLineDash([5, 6]);
-                kgCtx.lineDashOffset = -kgTime * 12;
+                kgCtx.setLineDash([5, 7]);
+                kgCtx.lineDashOffset = -kgTime * 4;
                 kgCtx.beginPath();
                 kgCtx.moveTo(a.x + (dx / len) * (a.r + 2), a.y + (dy / len) * (a.r + 2));
                 kgCtx.lineTo(b.x - (dx / len) * (b.r + 2), b.y - (dy / len) * (b.r + 2));
@@ -638,11 +652,13 @@
                 kgCtx.lineWidth = isHov ? 1.8 : 0.9;
                 kgCtx.stroke();
 
-                // Label
-                kgCtx.font = `${isHov ? 600 : 500} ${isHov ? 7.5 : 6.5}px Rajdhani,sans-serif`;
-                kgCtx.fillStyle = `hsla(${n.hue},80%,82%,${isHov ? 1 : 0.7})`;
+                // Label — valid font string: style weight size family
+                kgCtx.font = `${isHov ? 'bold' : 'normal'} ${isHov ? 8 : 7}px Rajdhani,sans-serif`;
+                kgCtx.fillStyle = `hsla(${n.hue},80%,85%,${isHov ? 1 : 0.75})`;
                 kgCtx.textAlign = 'center';
-                kgCtx.fillText(n.label, n.x, n.y - dispR - 4);
+                kgCtx.textBaseline = 'bottom';
+                kgCtx.fillText(n.label, n.x, n.y - dispR - 3);
+                kgCtx.textBaseline = 'alphabetic';
             }
         }
 
