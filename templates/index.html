@@ -179,21 +179,15 @@
                     </div>
                 </div>
 
-                <!-- Toggle — shows summary + agent cards -->
-                <button class="toggle-details-btn" id="toggleDetailsBtn" onclick="toggleDetails()" style="display:none">
-                    <span class="chevron">▼</span> View Research Process Details
-                </button>
-
-                <div class="agent-cards-wrapper" id="agentCardsWrapper">
-                    <div class="agent-cards" id="agentCards">
-                        <!-- Summary card inside hidden section -->
-                        <div class="agent-card final-card" id="summaryCard" style="display:none">
-                            <div class="agent-card-header">
-                                <div class="agent-card-icon">📊</div>
-                                <span class="agent-card-title">Research Summary</span>
-                            </div>
-                            <div class="agent-card-content" id="summaryContent"></div>
+                <!-- Agent cards — always visible, no toggle -->
+                <div class="agent-cards" id="agentCards">
+                    <!-- Summary card -->
+                    <div class="agent-card final-card" id="summaryCard" style="display:none">
+                        <div class="agent-card-header">
+                            <div class="agent-card-icon">📊</div>
+                            <span class="agent-card-title">Research Summary</span>
                         </div>
+                        <div class="agent-card-content" id="summaryContent"></div>
                     </div>
                 </div>
 
@@ -226,7 +220,7 @@
         const STAGES = ['planning', 'research', 'analysis', 'decision', 'memory'];
 
         let brainState = 'idle', isResearching = false, cognitiveInterval = null;
-        let graphNodes = [], detailsVisible = false;
+        let graphNodes = [];
 
         // ============================================================
         // AURORA BACKGROUND
@@ -471,15 +465,7 @@
             document.getElementById('timelineBar').classList.remove('scanning');
         }
 
-        // ============================================================
-        // TOGGLE DETAILS
-        // ============================================================
-        function toggleDetails() {
-            detailsVisible = !detailsVisible;
-            const w = document.getElementById('agentCardsWrapper'), b = document.getElementById('toggleDetailsBtn');
-            if (detailsVisible) { w.classList.add('expanded'); b.classList.add('expanded'); b.innerHTML = '<span class="chevron">▼</span> Hide Research Process Details'; }
-            else { w.classList.remove('expanded'); b.classList.remove('expanded'); b.innerHTML = '<span class="chevron">▼</span> View Research Process Details'; }
-        }
+        // (toggle removed — all cards always visible)
 
         // ============================================================
         // KNOWLEDGE GRAPH
@@ -558,15 +544,46 @@
         // ============================================================
         function showMemoryRecall() { return new Promise(res => { const ov = document.getElementById('memoryOverlay'); ov.classList.add('active'); setTimeout(() => { ov.classList.remove('active'); setTimeout(res, 700); }, 2800); }); }
 
-        async function typeText(text, el, speed = 5) { for (let i = 0; i < text.length; i++) { el.innerHTML += text.charAt(i); if (i % 3 === 0) await new Promise(r => setTimeout(r, speed)); } }
+        // ============================================================
+        // MARKDOWN PARSER + TEXT REVEAL
+        // ============================================================
+        function parseMarkdown(text) {
+            return text
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>')
+                .replace(/`(.+?)`/g, '<code class="inline-code">$1</code>');
+        }
 
-        async function revealText(text, container) {
+        async function revealText(text, container, speed = 5) {
             const lines = text.split('\n').filter(l => l.trim());
-            if (!lines.length) { await typeText(text, container); return; }
-            const h = document.createElement('div'); h.className = 'reveal-headline'; h.textContent = lines[0]; container.appendChild(h); await new Promise(r => setTimeout(r, 500));
-            if (lines.length > 2) { const b = document.createElement('div'); b.className = 'reveal-bullets'; b.innerHTML = lines.slice(1, -1).join('\n'); container.appendChild(b); await new Promise(r => setTimeout(r, 400)); }
-            const d = document.createElement('div'); d.className = 'reveal-details'; container.appendChild(d);
-            await typeText(lines.length > 2 ? lines[lines.length - 1] : lines.slice(1).join('\n'), d, 4);
+            if (!lines.length) return;
+            for (const line of lines) {
+                const div = document.createElement('div');
+                const t = line.trim();
+                // Detect line type for styling
+                if (/^#+\s/.test(t) || /^\*\*[^*]+\*\*:?\s*$/.test(t)) {
+                    div.className = 'reveal-headline';
+                    div.innerHTML = parseMarkdown(t.replace(/^#+\s*/, ''));
+                } else if (/^\d+\.\s/.test(t)) {
+                    div.className = 'reveal-numbered';
+                    div.innerHTML = parseMarkdown(t);
+                } else if (/^[-•✓✔●]\.?\s/.test(t)) {
+                    div.className = 'reveal-bullet';
+                    div.innerHTML = parseMarkdown(t);
+                } else {
+                    div.className = 'reveal-details';
+                    div.innerHTML = parseMarkdown(t);
+                }
+                div.style.opacity = '0';
+                div.style.transform = 'translateY(8px)';
+                div.style.transition = 'opacity 0.35s ease, transform 0.35s ease';
+                container.appendChild(div);
+                await new Promise(r => setTimeout(r, 20));
+                div.style.opacity = '1';
+                div.style.transform = 'translateY(0)';
+                await new Promise(r => setTimeout(r, speed * 12));
+            }
         }
 
         function createAgentCard(stage) {
@@ -575,7 +592,9 @@
             const ico = document.createElement('div'); ico.className = 'agent-card-icon'; ico.textContent = ICONS[stage] || '🔹';
             const ttl = document.createElement('span'); ttl.className = 'agent-card-title'; ttl.textContent = stage;
             hdr.append(ico, ttl); const cnt = document.createElement('div'); cnt.className = 'agent-card-content';
-            card.append(hdr, cnt); document.getElementById('agentCards').appendChild(card);
+            // Insert before summaryCard so process cards appear above it
+            const anchor = document.getElementById('summaryCard');
+            card.append(hdr, cnt); document.getElementById('agentCards').insertBefore(card, anchor);
             requestAnimationFrame(() => card.classList.add('visible')); return cnt;
         }
 
@@ -610,7 +629,6 @@
 
             // Reset
             resetTimeline();
-            // Clear only dynamic agent cards, keep the summary card structure
             document.querySelectorAll('#agentCards .agent-card:not(#summaryCard)').forEach(c => c.remove());
             document.getElementById('summaryCard').style.display = 'none';
             document.getElementById('summaryContent').innerHTML = '';
@@ -619,15 +637,87 @@
             document.getElementById('confidenceSection').classList.remove('active');
             document.getElementById('confidenceSection').style.display = 'none';
             document.getElementById('downloadBtn').style.display = 'none';
-            document.getElementById('toggleDetailsBtn').style.display = 'none';
-            document.getElementById('agentCardsWrapper').classList.remove('expanded');
-            detailsVisible = false;
             document.getElementById('gaugeValue').textContent = '—';
             clearGraph(); drawGauge(0);
+
+            // ============================================================
+            // PLANNING WAIT ANIMATION
+            // Shows animated thinking steps while backend is processing.
+            // ============================================================
+            const PLANNING_THOUGHTS = [
+                { icon: '🔍', text: 'Decomposing query into sub-questions...' },
+                { icon: '🧩', text: 'Formulating multi-step research strategy...' },
+                { icon: '📚', text: 'Identifying relevant knowledge domains...' },
+                { icon: '🗺️', text: 'Mapping the research landscape...' },
+                { icon: '⚡', text: 'Building hypothesis framework...' },
+                { icon: '🎯', text: 'Prioritizing evidence sources...' },
+                { icon: '🔗', text: 'Establishing causal chains...' },
+                { icon: '🤔', text: 'Calibrating analytical approach...' },
+            ];
+
+            let _planAnimCard = null, _planAnimInterval = null;
+
+            function startPlanningAnimation() {
+                // Create a live animated card
+                const card = document.createElement('div');
+                card.className = 'agent-card planning-live-card';
+                card.id = 'planningLiveCard';
+                card.innerHTML = `
+                <div class="agent-card-header">
+                    <div class="agent-card-icon" id="planThinkIcon">🧠</div>
+                    <span class="agent-card-title">Planning Research Strategy</span>
+                    <div class="plan-spinner"></div>
+                </div>
+                <div class="planning-thoughts" id="planThoughts"></div>
+                <div class="planning-progress">
+                    <div class="planning-progress-bar" id="planProgressBar"></div>
+                </div>`;
+                const anchor = document.getElementById('summaryCard');
+                document.getElementById('agentCards').insertBefore(card, anchor);
+                requestAnimationFrame(() => card.classList.add('visible'));
+
+                const thoughtsEl = card.querySelector('#planThoughts');
+                const iconEl = card.querySelector('#planThinkIcon');
+                const progressEl = card.querySelector('#planProgressBar');
+                let idx = 0, progress = 0;
+
+                function addThought() {
+                    const t = PLANNING_THOUGHTS[idx % PLANNING_THOUGHTS.length];
+                    iconEl.textContent = t.icon;
+                    const row = document.createElement('div');
+                    row.className = 'thought-row';
+                    row.innerHTML = `<span class="thought-dot"></span><span class="thought-text">${t.text}</span>`;
+                    row.style.opacity = '0'; row.style.transform = 'translateX(-12px)';
+                    row.style.transition = 'all 0.4s cubic-bezier(0.34,1.56,0.64,1)';
+                    thoughtsEl.appendChild(row);
+                    // Keep only last 4 thoughts
+                    const rows = thoughtsEl.querySelectorAll('.thought-row');
+                    if (rows.length > 4) { rows[0].style.opacity = '0'; setTimeout(() => rows[0].remove(), 400); }
+                    setTimeout(() => { row.style.opacity = '1'; row.style.transform = 'translateX(0)'; }, 30);
+                    idx++;
+                    progress = Math.min(progress + 8 + Math.random() * 6, 88);
+                    progressEl.style.width = progress + '%';
+                }
+
+                addThought();
+                _planAnimInterval = setInterval(addThought, 1800);
+                _planAnimCard = card;
+            }
+
+            function stopPlanningAnimation() {
+                clearInterval(_planAnimInterval);
+                _planAnimInterval = null;
+                if (_planAnimCard) {
+                    const bar = _planAnimCard.querySelector('#planProgressBar');
+                    if (bar) bar.style.width = '100%';
+                    setTimeout(() => { if (_planAnimCard) { _planAnimCard.style.opacity = '0'; _planAnimCard.style.transition = 'opacity 0.4s'; setTimeout(() => { if (_planAnimCard) { _planAnimCard.remove(); _planAnimCard = null; } }, 400); } }, 300);
+                }
+            }
 
             setBrainState('planning');
             setTimelineStage('planning', 'processing');
             startStream('planning');
+            startPlanningAnimation();  // Start live planning card animation
 
             try {
                 const res = await fetch('/ask', {
@@ -636,67 +726,74 @@
                 });
                 const data = await res.json();
                 stopStream();
+                stopPlanningAnimation(); // Remove the live planning card
 
-                // Process steps (planning + research only)
+                // ── SIMULTANEOUS: stage animation + card content together ──
+                // Each stage glows on the timeline AND its card appears at the same time.
                 let lastStage = '';
                 for (const step of data.steps) {
                     const stage = step.stage;
                     if (stage !== lastStage) {
                         if (lastStage) setTimelineStage(lastStage, 'completed');
-                        setBrainState(stage); setTimelineStage(stage, 'processing'); startStream(stage);
-                        if (stage === 'memory') await showMemoryRecall();
-                        await new Promise(r => setTimeout(r, 900)); stopStream(); lastStage = stage;
+                        setBrainState(stage);
+                        setTimelineStage(stage, 'processing');
+                        startStream(stage);
+                        await new Promise(r => setTimeout(r, 400)); // brief stage-glow moment
+                        stopStream();
+                        lastStage = stage;
                     }
-                    const el = createAgentCard(stage); await revealText(step.content, el);
-                    if (stage === 'research' || stage === 'analysis') {
-                        const concepts = extractConcepts(step.content);
-                        for (const c of concepts) { addNode(c); await new Promise(r => setTimeout(r, 180)); }
-                    }
-                    await new Promise(r => setTimeout(r, 350));
+                    // Card appears simultaneously with its stage
+                    const el = createAgentCard(stage);
+                    // Knowledge graph builds alongside card
+                    const concepts = extractConcepts(step.content);
+                    // Reveal card text + graph nodes concurrently
+                    const graphPromise = (async () => {
+                        for (const c of concepts) { addNode(c); await new Promise(r => setTimeout(r, 80)); }
+                    })();
+                    await revealText(step.content, el, 3);
+                    await graphPromise;
+                    await new Promise(r => setTimeout(r, 150));
                 }
                 if (lastStage) setTimelineStage(lastStage, 'completed');
 
-                // ── ANALYSIS (manually animated) ──
+                // ── ANALYSIS (animated) ──
                 setBrainState('analysis');
                 setTimelineStage('analysis', 'processing');
                 startStream('analysis');
-                await new Promise(r => setTimeout(r, 2200));
+                await new Promise(r => setTimeout(r, 1200));
                 const ac = extractConcepts(data.summary);
-                for (const c of ac) { addNode(c); await new Promise(r => setTimeout(r, 180)); }
+                for (const c of ac) { addNode(c); await new Promise(r => setTimeout(r, 60)); }
                 stopStream();
                 setTimelineStage('analysis', 'completed');
 
-                // ── DECISION (manually animated) ──
+                // ── DECISION (animated) ──
                 setBrainState('decision');
                 setTimelineStage('decision', 'processing');
                 startStream('decision');
-                await new Promise(r => setTimeout(r, 1800));
+                await new Promise(r => setTimeout(r, 900));
                 stopStream();
                 setTimelineStage('decision', 'completed');
 
-                // ── SHOW FINAL CONCLUSION (only visible card) ──
+                // ── FINAL CONCLUSION ──
                 const cc = document.getElementById('conclusionCard');
                 cc.style.display = 'block';
                 cc.classList.add('agent-card', 'final-card', 'visible');
                 const ce = document.getElementById('conclusionContent'); ce.innerHTML = '';
-                await revealText(data.verdict, ce);
+                await revealText(data.verdict, ce, 3);
 
-                // Confidence
+                // Confidence gauge
                 animateGauge(extractConfidence(data.verdict));
 
-                // Summary goes into the hidden section
+                // ── SUMMARY (into detail section, always visible) ──
                 const sc = document.getElementById('summaryCard');
                 sc.style.display = 'block'; sc.classList.add('agent-card', 'final-card', 'visible');
                 const se = document.getElementById('summaryContent'); se.innerHTML = '';
-                await revealText(data.summary, se);
-
-                // Show toggle
-                document.getElementById('toggleDetailsBtn').style.display = 'inline-flex';
+                await revealText(data.summary, se, 3);
 
                 // ── MEMORY ──
                 setBrainState('memory');
                 setTimelineStage('memory', 'processing');
-                await new Promise(r => setTimeout(r, 1200));
+                await new Promise(r => setTimeout(r, 700));
                 setTimelineStage('memory', 'completed');
                 setBrainState('idle');
 

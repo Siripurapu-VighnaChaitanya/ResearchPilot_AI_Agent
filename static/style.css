@@ -1104,68 +1104,6 @@ body::before {
 }
 
 /* ===== TOGGLE BUTTON ===== */
-.toggle-details-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 26px;
-    border-radius: var(--radius-sm);
-    border: 1px solid rgba(168, 85, 247, 0.3);
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.06), rgba(0, 228, 255, 0.04));
-    color: var(--purple-bright);
-    font-family: 'Orbitron', monospace;
-    font-weight: 600;
-    font-size: 0.65rem;
-    cursor: pointer;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    transition: all 0.4s;
-    margin: 6px 0;
-    align-self: flex-start;
-    position: relative;
-    overflow: hidden;
-}
-
-.toggle-details-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.08), transparent);
-    transition: left 0.5s;
-}
-
-.toggle-details-btn:hover::before {
-    left: 100%;
-}
-
-.toggle-details-btn:hover {
-    box-shadow: 0 0 30px rgba(168, 85, 247, 0.15);
-    transform: translateY(-2px);
-    border-color: rgba(168, 85, 247, 0.5);
-}
-
-.toggle-details-btn .chevron {
-    display: inline-block;
-    transition: transform 0.4s;
-    font-size: 0.85rem;
-}
-
-.toggle-details-btn.expanded .chevron {
-    transform: rotate(180deg);
-}
-
-.agent-cards-wrapper {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.7s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.agent-cards-wrapper.expanded {
-    max-height: 10000px;
-}
 
 /* ===== HOLOGRAPHIC AGENT CARDS ===== */
 .agent-cards {
@@ -1275,8 +1213,28 @@ body::before {
     font-size: 0.94rem;
     line-height: 1.8;
     color: var(--text-primary);
-    white-space: pre-wrap;
     font-family: 'Inter', sans-serif;
+}
+
+/* Inline markdown styles */
+.agent-card-content strong {
+    color: var(--cyan);
+    font-weight: 700;
+}
+
+.agent-card-content em {
+    color: rgba(192, 132, 252, 0.9);
+    font-style: italic;
+}
+
+.inline-code {
+    background: rgba(0, 228, 255, 0.08);
+    border: 1px solid rgba(0, 228, 255, 0.2);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'Rajdhani', monospace;
+    font-size: 0.88em;
+    color: var(--cyan);
 }
 
 /* Final conclusion card — extra special */
@@ -1292,28 +1250,52 @@ body::before {
     background-size: 200% 100%;
 }
 
-/* Text Reveal */
+/* Text Reveal — per-line JS-driven transitions */
 .reveal-headline {
-    font-size: 1.2rem;
-    font-weight: 600;
+    font-size: 1.1rem;
+    font-weight: 700;
     color: var(--cyan);
-    margin-bottom: 12px;
-    opacity: 0;
-    transform: translateY(12px);
-    animation: revealIn 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    margin-bottom: 6px;
+    margin-top: 4px;
+    letter-spacing: 0.3px;
 }
 
-.reveal-bullets {
-    opacity: 0;
-    transform: translateY(12px);
-    animation: revealIn 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.3s forwards;
+.reveal-headline strong {
+    color: var(--cyan);
 }
 
 .reveal-details {
-    opacity: 0;
-    transform: translateY(12px);
-    animation: revealIn 0.7s cubic-bezier(0.4, 0, 0.2, 1) 0.6s forwards;
     color: var(--text-secondary);
+    margin-bottom: 2px;
+    line-height: 1.75;
+}
+
+.reveal-numbered {
+    color: var(--text-primary);
+    padding: 3px 0 3px 4px;
+    margin-bottom: 2px;
+    border-left: 2px solid rgba(0, 228, 255, 0.25);
+    padding-left: 10px;
+}
+
+.reveal-numbered strong {
+    color: var(--cyan);
+}
+
+.reveal-bullet {
+    color: var(--text-primary);
+    padding: 2px 0 2px 4px;
+    position: relative;
+    padding-left: 18px;
+}
+
+.reveal-bullet::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--green);
+    font-weight: 700;
+    font-size: 0.85em;
 }
 
 @keyframes revealIn {
@@ -1630,4 +1612,101 @@ body::before {
         height: 52px;
         font-size: 1.2rem;
     }
+}
+
+/* ============================================================
+   PLANNING LIVE ANIMATION CARD
+   ============================================================ */
+.planning-live-card {
+    border-color: rgba(0, 228, 255, 0.25) !important;
+    background: linear-gradient(135deg, rgba(0, 228, 255, 0.05), rgba(168, 85, 247, 0.05)) !important;
+}
+
+.planning-live-card .agent-card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+/* Spinner next to title */
+.plan-spinner {
+    margin-left: auto;
+    width: 20px;
+    height: 20px;
+    border: 2.5px solid rgba(0, 228, 255, 0.15);
+    border-top-color: var(--cyan);
+    border-radius: 50%;
+    animation: planSpin 0.8s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes planSpin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Thought rows */
+.planning-thoughts {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 90px;
+    margin-bottom: 14px;
+}
+
+.thought-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.thought-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--cyan);
+    flex-shrink: 0;
+    box-shadow: 0 0 8px var(--cyan);
+    animation: thoughtDotPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes thoughtDotPulse {
+
+    0%,
+    100% {
+        opacity: 0.5;
+        transform: scale(0.8);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.2);
+    }
+}
+
+.thought-text {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    letter-spacing: 0.3px;
+}
+
+/* Progress bar */
+.planning-progress {
+    height: 3px;
+    background: rgba(0, 228, 255, 0.08);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.planning-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--cyan), var(--purple));
+    border-radius: 3px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 10px rgba(0, 228, 255, 0.4);
 }
