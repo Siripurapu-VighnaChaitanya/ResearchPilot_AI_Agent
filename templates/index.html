@@ -199,7 +199,8 @@
 
             <div class="knowledge-panel">
                 <div class="knowledge-panel-title">Knowledge Graph</div>
-                <svg id="knowledgeGraph" viewBox="0 0 260 320"></svg>
+                <canvas id="kgCanvas" width="260" height="320"
+                    style="width:100%;height:320px;cursor:crosshair;border-radius:8px;"></canvas>
                 <div class="knowledge-concepts" id="conceptTags"></div>
             </div>
         </div>
@@ -220,7 +221,6 @@
         const STAGES = ['planning', 'research', 'analysis', 'decision', 'memory'];
 
         let brainState = 'idle', isResearching = false, cognitiveInterval = null;
-        let graphNodes = [];
 
         // ============================================================
         // AURORA BACKGROUND
@@ -468,48 +468,206 @@
         // (toggle removed — all cards always visible)
 
         // ============================================================
-        // KNOWLEDGE GRAPH
+        // KNOWLEDGE GRAPH — Canvas Force-Directed Physics
         // ============================================================
-        const kgSvg = document.getElementById('knowledgeGraph'), conceptBox = document.getElementById('conceptTags');
-        const KW = ['evidence', 'hypothesis', 'correlation', 'source', 'data', 'pattern', 'conclusion', 'factor', 'mechanism', 'study', 'analysis', 'finding', 'theory', 'result', 'impact', 'cause', 'effect'];
+        const kgCanvas = document.getElementById('kgCanvas');
+        const kgCtx = kgCanvas.getContext('2d');
+        const conceptBox = document.getElementById('conceptTags');
+
+        // Resize canvas to match display size
+        function resizeKG() {
+            const rect = kgCanvas.getBoundingClientRect();
+            kgCanvas.width = rect.width || 260;
+            kgCanvas.height = rect.height || 320;
+        }
+        resizeKG();
+        window.addEventListener('resize', resizeKG);
+
+        const KW = ['evidence', 'hypothesis', 'correlation', 'source', 'data', 'pattern',
+            'conclusion', 'factor', 'mechanism', 'study', 'analysis', 'finding',
+            'theory', 'result', 'impact', 'cause', 'effect'];
+
+        // Graph state
+        let kgNodes = [], kgEdges = [], kgAnimId = null, kgHover = -1;
+        let kgTime = 0;
+
         function extractConcepts(t) {
-            const w = t.toLowerCase().split(/[\s,.:;!?()\[\]{}]+/), f = [];
+            // Strip ** markers before matching
+            const clean = t.replace(/\*\*/g, '').replace(/\*/g, '').toLowerCase();
+            const w = clean.split(/[\s,.:;!?()\[\]{}]+/);
+            const f = [];
             for (const k of KW) if (w.includes(k) && !f.includes(k)) f.push(k);
             return [...f, ...[...new Set(w.filter(x => x.length > 6 && !KW.includes(x)))].slice(0, 3)].slice(0, 8);
         }
-        function addNode(label) {
-            const cx = 25 + Math.random() * 210, cy = 20 + Math.random() * 280, r = 3 + Math.random() * 5;
-            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            circle.setAttribute('cx', cx); circle.setAttribute('cy', cy); circle.setAttribute('r', '0');
-            circle.setAttribute('fill', 'rgba(168,85,247,0.5)'); circle.setAttribute('stroke', '#c084fc'); circle.setAttribute('stroke-width', '0.8');
-            circle.style.transition = 'all 0.6s cubic-bezier(0.34,1.56,0.64,1)'; kgSvg.appendChild(circle); setTimeout(() => circle.setAttribute('r', r), 30);
-            const glow = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            glow.setAttribute('cx', cx); glow.setAttribute('cy', cy); glow.setAttribute('r', r * 3); glow.setAttribute('fill', 'rgba(168,85,247,0.06)');
-            kgSvg.insertBefore(glow, kgSvg.firstChild);
-            graphNodes.push({ cx, cy, r, label });
-            const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            txt.setAttribute('x', cx); txt.setAttribute('y', cy - r - 5); txt.setAttribute('text-anchor', 'middle');
-            txt.setAttribute('fill', 'rgba(192,132,252,0.6)'); txt.setAttribute('font-size', '7');
-            txt.setAttribute('font-family', 'Rajdhani,sans-serif'); txt.setAttribute('font-weight', '600');
-            txt.textContent = label; txt.style.opacity = '0'; txt.style.transition = 'opacity 0.5s ease 0.3s';
-            kgSvg.appendChild(txt); setTimeout(() => txt.style.opacity = '1', 60);
-            if (graphNodes.length > 1) {
-                const pv = graphNodes[graphNodes.length - 2]; addEdge(pv.cx, pv.cy, cx, cy);
-                if (graphNodes.length > 2 && Math.random() > 0.4) { const ri = Math.floor(Math.random() * (graphNodes.length - 2)); addEdge(graphNodes[ri].cx, graphNodes[ri].cy, cx, cy); }
+
+        function addNode(rawLabel) {
+            // Clean label of markdown
+            const label = rawLabel.replace(/\*\*/g, '').replace(/\*/g, '').trim();
+            if (kgNodes.find(n => n.label === label)) return;
+
+            const W = kgCanvas.width, H = kgCanvas.height;
+            const x = 40 + Math.random() * (W - 80);
+            const y = 40 + Math.random() * (H - 80);
+            const r = 6 + Math.random() * 6;
+            const hue = [188, 270, 145, 220][Math.floor(Math.random() * 4)];
+
+            // Connect to 1-2 existing nodes
+            const prevIdx = kgNodes.length;
+            kgNodes.push({ x, y, vx: 0, vy: 0, r, label, hue, pulse: Math.random() * Math.PI * 2 });
+
+            if (prevIdx > 0) {
+                kgEdges.push({ a: prevIdx - 1, b: prevIdx, prog: 0 });
+                if (prevIdx > 1 && Math.random() > 0.4) {
+                    kgEdges.push({ a: Math.floor(Math.random() * (prevIdx - 1)), b: prevIdx, prog: 0 });
+                }
             }
-            const tag = document.createElement('span'); tag.className = 'concept-tag'; tag.textContent = label;
-            conceptBox.appendChild(tag); setTimeout(() => tag.classList.add('visible'), 60);
+
+            // Add concept tag (clean label)
+            const tag = document.createElement('span');
+            tag.className = 'concept-tag';
+            tag.textContent = label;
+            conceptBox.appendChild(tag);
+            setTimeout(() => tag.classList.add('visible'), 60);
+
+            if (!kgAnimId) startKGLoop();
         }
-        function addEdge(x1, y1, x2, y2) {
-            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('x1', x1); line.setAttribute('y1', y1); line.setAttribute('x2', x2); line.setAttribute('y2', y2);
-            line.setAttribute('stroke', 'rgba(0,228,255,0.12)'); line.setAttribute('stroke-width', '0.6');
-            const len = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
-            line.setAttribute('stroke-dasharray', len); line.setAttribute('stroke-dashoffset', len);
-            line.style.transition = 'stroke-dashoffset 0.8s ease';
-            kgSvg.insertBefore(line, kgSvg.firstChild); setTimeout(() => line.setAttribute('stroke-dashoffset', '0'), 30);
+
+        function startKGLoop() {
+            kgAnimId = requestAnimationFrame(kgTick);
         }
-        function clearGraph() { kgSvg.innerHTML = ''; conceptBox.innerHTML = ''; graphNodes = []; }
+
+        function kgTick() {
+            kgTime += 0.016;
+            physicsStep();
+            drawKG();
+            kgAnimId = requestAnimationFrame(kgTick);
+        }
+
+        const REPEL = 1800, SPRING_LEN = 80, SPRING_K = 0.04, DAMP = 0.88, GRAVITY = 0.015;
+
+        function physicsStep() {
+            const W = kgCanvas.width, H = kgCanvas.height;
+            const cx = W / 2, cy = H / 2;
+
+            // Repulsion between all node pairs
+            for (let i = 0; i < kgNodes.length; i++) {
+                const a = kgNodes[i];
+                // Soft gravity toward center
+                a.vx += (cx - a.x) * GRAVITY * 0.01;
+                a.vy += (cy - a.y) * GRAVITY * 0.01;
+                for (let j = i + 1; j < kgNodes.length; j++) {
+                    const b = kgNodes[j];
+                    const dx = a.x - b.x, dy = a.y - b.y;
+                    const dist2 = dx * dx + dy * dy + 1;
+                    const f = REPEL / dist2;
+                    a.vx += dx * f; a.vy += dy * f;
+                    b.vx -= dx * f; b.vy -= dy * f;
+                }
+            }
+
+            // Spring attraction along edges
+            for (const e of kgEdges) {
+                if (e.prog < 1) e.prog = Math.min(1, e.prog + 0.04);
+                const a = kgNodes[e.a], b = kgNodes[e.b];
+                const dx = b.x - a.x, dy = b.y - a.y;
+                const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                const stretch = (dist - SPRING_LEN) * SPRING_K;
+                const fx = (dx / dist) * stretch, fy = (dy / dist) * stretch;
+                a.vx += fx; a.vy += fy;
+                b.vx -= fx; b.vy -= fy;
+            }
+
+            // Integrate + damp + clamp to canvas
+            for (const n of kgNodes) {
+                n.vx *= DAMP; n.vy *= DAMP;
+                n.x = Math.max(n.r + 6, Math.min(W - n.r - 6, n.x + n.vx));
+                n.y = Math.max(n.r + 14, Math.min(H - n.r - 6, n.y + n.vy));
+                n.pulse += 0.04;
+            }
+        }
+
+        function drawKG() {
+            const W = kgCanvas.width, H = kgCanvas.height;
+            kgCtx.clearRect(0, 0, W, H);
+
+            // Draw edges
+            for (const e of kgEdges) {
+                const a = kgNodes[e.a], b = kgNodes[e.b];
+                if (!a || !b) continue;
+                const isHighlighted = kgHover === e.a || kgHover === e.b;
+                const alpha = isHighlighted ? 0.45 : 0.15;
+                const dx = b.x - a.x, dy = b.y - a.y;
+                const len = Math.sqrt(dx * dx + dy * dy);
+                // Animated dash
+                kgCtx.save();
+                kgCtx.setLineDash([5, 6]);
+                kgCtx.lineDashOffset = -kgTime * 12;
+                kgCtx.beginPath();
+                kgCtx.moveTo(a.x + (dx / len) * (a.r + 2), a.y + (dy / len) * (a.r + 2));
+                kgCtx.lineTo(b.x - (dx / len) * (b.r + 2), b.y - (dy / len) * (b.r + 2));
+                kgCtx.strokeStyle = isHighlighted
+                    ? `rgba(0,228,255,${alpha})`
+                    : `rgba(168,85,247,${alpha * e.prog})`;
+                kgCtx.lineWidth = isHighlighted ? 1.2 : 0.8;
+                kgCtx.stroke();
+                kgCtx.restore();
+            }
+
+            // Draw nodes
+            for (let i = 0; i < kgNodes.length; i++) {
+                const n = kgNodes[i];
+                const isHov = kgHover === i;
+                const pulseFactor = 1 + Math.sin(n.pulse) * 0.12;
+                const dispR = n.r * pulseFactor;
+
+                // Outer glow ring
+                const grad = kgCtx.createRadialGradient(n.x, n.y, dispR * 0.4, n.x, n.y, dispR * 2.8);
+                grad.addColorStop(0, `hsla(${n.hue},100%,65%,${isHov ? 0.25 : 0.12})`);
+                grad.addColorStop(1, 'transparent');
+                kgCtx.beginPath();
+                kgCtx.arc(n.x, n.y, dispR * 2.8, 0, Math.PI * 2);
+                kgCtx.fillStyle = grad;
+                kgCtx.fill();
+
+                // Node circle
+                kgCtx.beginPath();
+                kgCtx.arc(n.x, n.y, dispR, 0, Math.PI * 2);
+                kgCtx.fillStyle = `hsla(${n.hue},85%,${isHov ? 72 : 58}%,${isHov ? 0.9 : 0.65})`;
+                kgCtx.fill();
+                kgCtx.strokeStyle = `hsla(${n.hue},100%,80%,${isHov ? 0.9 : 0.5})`;
+                kgCtx.lineWidth = isHov ? 1.8 : 0.9;
+                kgCtx.stroke();
+
+                // Label
+                kgCtx.font = `${isHov ? 600 : 500} ${isHov ? 7.5 : 6.5}px Rajdhani,sans-serif`;
+                kgCtx.fillStyle = `hsla(${n.hue},80%,82%,${isHov ? 1 : 0.7})`;
+                kgCtx.textAlign = 'center';
+                kgCtx.fillText(n.label, n.x, n.y - dispR - 4);
+            }
+        }
+
+        // Hover detection
+        kgCanvas.addEventListener('mousemove', e => {
+            const rect = kgCanvas.getBoundingClientRect();
+            const scaleX = kgCanvas.width / rect.width;
+            const scaleY = kgCanvas.height / rect.height;
+            const mx = (e.clientX - rect.left) * scaleX;
+            const my = (e.clientY - rect.top) * scaleY;
+            let found = -1;
+            for (let i = 0; i < kgNodes.length; i++) {
+                const n = kgNodes[i];
+                if (Math.sqrt((mx - n.x) ** 2 + (my - n.y) ** 2) < n.r + 8) { found = i; break; }
+            }
+            kgHover = found;
+        });
+        kgCanvas.addEventListener('mouseleave', () => { kgHover = -1; });
+
+        function clearGraph() {
+            if (kgAnimId) { cancelAnimationFrame(kgAnimId); kgAnimId = null; }
+            kgNodes = []; kgEdges = []; kgHover = -1;
+            kgCtx.clearRect(0, 0, kgCanvas.width, kgCanvas.height);
+            conceptBox.innerHTML = '';
+        }
 
         // ============================================================
         // CONFIDENCE GAUGE (bigger)
